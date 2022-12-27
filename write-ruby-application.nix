@@ -19,10 +19,9 @@ pkgs.writeTextFile {
   in if checkPhase == null then ''
     runHook preCheck
     HOME=$(mktemp -d rubocop-XXXXXXXX)
-    ${pkgs.rubocop}/bin/rubocop \
-      --except ${pkgs.lib.concatStringsSep "," excludedChecks} \
-      --cache false
-      "$target/${name}"
+    ${pkgs.rubocop}/bin/rubocop --except ${
+      pkgs.lib.concatStringsSep "," excludedChecks
+    } --cache false "$target/${name}"
     runHook postCheck
   '' else
     checkPhase;
