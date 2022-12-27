@@ -15,7 +15,7 @@ pkgs.writeTextFile {
     ${pkgs.rubocop}/bin/rubocop \
       --except Style/ColonMethodCall,Style/BlockDelimiters,Style/StringLiterals \
       --cache false
-      "$target"
+      "$target/${name}"
     runHook postCheck
   '' else
     checkPhase;
