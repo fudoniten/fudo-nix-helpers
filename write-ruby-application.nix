@@ -9,11 +9,18 @@ pkgs.writeTextFile {
 
     ${text}
   '';
-  checkPhase = if checkPhase == null then ''
+  checkPhase = let
+    excludedChecks = [
+      "Style/ColonMethodCall"
+      "Style/BlockDelimiters"
+      "Style/StringLiterals"
+      "Naming/FileName"
+    ];
+  in if checkPhase == null then ''
     runHook preCheck
     HOME=$(mktemp -d rubocop-XXXXXXXX)
     ${pkgs.rubocop}/bin/rubocop \
-      --except Style/ColonMethodCall,Style/BlockDelimiters,Style/StringLiterals \
+      --except ${pkgs.lib.concatStringsSep "," excludedChecks} \
       --cache false
       "$target/${name}"
     runHook postCheck
