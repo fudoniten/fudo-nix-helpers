@@ -11,6 +11,7 @@ pkgs.writeTextFile {
   '';
   checkPhase = if checkPhase == null then ''
     runHook preCheck
+    HOME=$(mktemp -d rubocop-XXXXXXXX)
     ${pkgs.rubocop}/bin/rubocop \
       --except Style/ColonMethodCall,Style/BlockDelimiters,Style/StringLiterals \
       "$target"
