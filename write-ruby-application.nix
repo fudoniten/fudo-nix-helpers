@@ -15,6 +15,8 @@ pkgs.writeTextFile {
       "Style/BlockDelimiters"
       "Style/StringLiterals"
       "Naming/FileName"
+      "Layout/TrailingEmptyLines"
+      "Lint/ScriptPermission"
     ];
   in if checkPhase == null then ''
     runHook preCheck
