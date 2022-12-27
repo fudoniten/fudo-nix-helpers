@@ -14,6 +14,7 @@ pkgs.writeTextFile {
     HOME=$(mktemp -d rubocop-XXXXXXXX)
     ${pkgs.rubocop}/bin/rubocop \
       --except Style/ColonMethodCall,Style/BlockDelimiters,Style/StringLiterals \
+      --cache false
       "$target"
     runHook postCheck
   '' else
