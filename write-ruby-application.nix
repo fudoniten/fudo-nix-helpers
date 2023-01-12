@@ -5,7 +5,7 @@ pkgs.writeTextFile {
   executable = true;
   destination = "/bin/${name}";
   text = ''
-    #!${pkgs.ruby}/bin/ruby
+    #!${pkgs.ruby_3_1}/bin/ruby
 
     ${text}
   '';
