@@ -1,6 +1,6 @@
 { name, text, pkgs, runtimeInputs ? [ ], checkPhase ? null, ... }:
 pkgs.writeTextFile {
-  inherit name;
+  inherit name runtimeInputs;
   meta.mainProgram = name;
   executable = true;
   destination = "/bin/${name}";
