@@ -2,8 +2,8 @@
 
 with pkgs.lib;
 let
-  rubyExec = let ruby-name = "${name}-ruby";
-  in pkgs.writeTextFile {
+  ruby-name = "${name}-ruby";
+  rubyExec = pkgs.writeTextFile {
     name = ruby-name;
     meta.mainProgram = ruby-name;
     executable = true;
@@ -35,5 +35,5 @@ let
 in pkgs.writeShellScriptBin name (optionalString (runtimeInputs != [ ]) ''
   export PATH="${makeBinPath runtimeInputs}:$PATH"
 '' + ''
-  ${rubyExec}
+  ${rubyExec}/bin/${ruby-name}
 '')
