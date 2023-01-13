@@ -35,5 +35,5 @@ let
 in pkgs.writeShellScriptBin name (optionalString (runtimeInputs != [ ]) ''
   export PATH="${makeBinPath runtimeInputs}:$PATH"
 '' + ''
-  ${rubyExec}/bin/${ruby-name}
+  ${rubyExec}/bin/${ruby-name} $@
 '')
