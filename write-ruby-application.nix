@@ -1,4 +1,5 @@
-{ name, text, pkgs, runtimeInputs ? [ ], checkPhase ? null, ... }:
+{ name, text, pkgs, runtimeInputs ? [ ], ruby ? pkgs.ruby_3_1
+, rubocop ? pkgs.rubocop, checkPhase ? null, ... }:
 
 with pkgs.lib;
 let
@@ -9,7 +10,7 @@ let
     executable = true;
     destination = "/bin/${ruby-name}";
     text = ''
-      #!${pkgs.ruby_3_1}/bin/ruby
+      #!${ruby}/bin/ruby
 
       ${text}
     '';
@@ -25,8 +26,8 @@ let
     in if checkPhase == null then ''
       runHook preCheck
       HOME=$(mktemp -d rubocop-XXXXXXXX)
-      ${pkgs.rubocop}/bin/rubocop --except ${
-        pkgs.lib.concatStringsSep "," excludedChecks
+      ${rubocop}/bin/rubocop --except ${
+        concatStringsSep "," excludedChecks
       } --cache false "$target"
       runHook postCheck
     '' else
