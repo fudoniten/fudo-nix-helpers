@@ -1,4 +1,4 @@
-{ name, text, pkgs, runtimeInputs ? [ ], ruby ? pkgs.ruby_3_1, loadPath ? [ ]
+{ name, text, pkgs, runtimeInputs ? [ ], ruby ? pkgs.ruby_3_1, libInputs ? [ ]
 , rubocop ? pkgs.rubocop, checkPhase ? null, ... }:
 
 with pkgs.lib;
@@ -33,12 +33,11 @@ let
     '' else
       checkPhase;
   };
-  makeLoadPath = loadPaths:
-    concatStringsSep ":" (map (path: "${path}") loadPaths);
+  makeLibPath = libPaths: concatStringsSep ":" (map (path: "${path}") libPaths);
 in pkgs.writeShellScriptBin name (optionalString (runtimeInputs != [ ]) ''
   export PATH="${makeBinPath runtimeInputs}:$PATH"
-'' + (optionalString (loadPath != [ ]) ''
-  export RUBYLIB="$RUBYLIB:${makeLoadPath loadPath}"
+'' + (optionalString (libInputs != [ ]) ''
+  export RUBYLIB="$RUBYLIB:${makeLibPath libInputs}"
 '') + ''
   ${rubyExec}/bin/${ruby-name} $@
 '')
