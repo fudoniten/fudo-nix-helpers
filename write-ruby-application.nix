@@ -37,7 +37,7 @@ let
 in pkgs.writeShellScriptBin name (optionalString (runtimeInputs != [ ]) ''
   export PATH="${makeBinPath runtimeInputs}:$PATH"
 '' + (optionalString (libInputs != [ ]) ''
-  export RUBYLIB="$RUBYLIB:${makeLibPath libInputs}"
+  export RUBYLIB="${makeLibPath libInputs}"
 '') + ''
   ${rubyExec}/bin/${ruby-name} $@
 '')
