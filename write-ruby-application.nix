@@ -1,5 +1,5 @@
 { name, text, pkgs, runtimeInputs ? [ ], ruby ? pkgs.ruby_3_1, libInputs ? [ ]
-, rubocop ? pkgs.rubocop, checkPhase ? null, ... }:
+, rubocop ? pkgs.rubocop, checkPhase ? null }:
 
 with pkgs.lib;
 let
