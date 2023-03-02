@@ -8,6 +8,6 @@ mkCljBin {
   inherit name jdkRunner version;
   projectSrc = src;
   main-ns = primaryNamespace;
-  checkPhase = mkIf (checkPhase != null) checkPhase;
+  checkPhase = optionalString (checkPhase != null) checkPhase;
   lockfile = "${src}/deps-lock.json";
 }
