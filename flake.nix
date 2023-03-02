@@ -16,7 +16,7 @@
 
         clj-pkgs = clj-nix.packages."${system}";
 
-        default-jdk = pkgs.jdk18_headless;
+        default-jdk = pkgs.jdk17_headless;
       in {
         packages = {
           mkClojureLib = pkgs.callPackage ./clojure-lib.nix {
