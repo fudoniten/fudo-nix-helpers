@@ -2,7 +2,7 @@
 
 with pkgs.lib;
 
-{ name, primaryNamespace, src ? ./., version ? "0.1", checkPhase ? null, ... }:
+{ name, primaryNamespace, src, version ? "0.1", checkPhase ? null, ... }:
 
 mkCljBin {
   inherit name jdkRunner version;
