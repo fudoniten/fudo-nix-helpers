@@ -31,6 +31,6 @@
             "${clj-nix.packages."${system}".deps-lock}/bin/deps-lock";
         };
       }) // {
-        lib = { writeRubyApplication = import ./write-ruby-application.nix; };
+        lib.writeRubyApplication = import ./write-ruby-application.nix;
       };
 }

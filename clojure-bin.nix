@@ -9,5 +9,5 @@ mkCljBin {
   projectSrc = src;
   main-ns = primaryNamespace;
   checkPhase = mkIf (checkPhase != null) checkPhase;
-  lockfile = "${src}/deps-lock.json";
+  lockfile = toPath "${src}/deps-lock.json";
 }
