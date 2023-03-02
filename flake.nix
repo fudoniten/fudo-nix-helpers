@@ -12,10 +12,7 @@
   outputs = { self, nixpkgs, clj2nix, clj-nix, utils, ... }:
     utils.lib.eachDefaultSystem (system:
       let
-        pkgs = import nixpkgs {
-          inherit system;
-          overlays = [ self.overlays.default ];
-        };
+        pkgs = import nixpkgs { inherit system; };
 
         clj-pkgs = clj-nix.packages."${system}";
 
