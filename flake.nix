@@ -18,7 +18,7 @@
 
         default-jdk = pkgs.jdk17_headless;
       in {
-        packages = {
+        packages = rec {
           mkClojureLib = pkgs.callPackage ./clojure-lib.nix {
             inherit (clj-pkgs) mkCljLib;
             jdkRunner = default-jdk;
@@ -29,6 +29,10 @@
           };
           updateClojureDeps = pkgs.writeShellScriptBin "update-deps.sh"
             "${clj-nix.packages."${system}".deps-lock}/bin/deps-lock";
+          cljInject = pkgs.callPackage ./lib/injector/package.nix {
+            inherit (clj-pkgs) mkCljBin;
+            jdkRunner = default-jdk;
+          };
         };
       }) // {
         lib.writeRubyApplication = import ./write-ruby-application.nix;
