@@ -43,7 +43,7 @@
                 SRC=$(pwd)
                 TMP=$(mktemp -d)
                 clj-inject "$SRC" > "$TMP/deps.edn"
-                cd $TMP
+                cd "$TMP"
                 deps-lock
                 mv "$TMP/deps-lock.json" "$SRC/deps-lock.json"
               '';
