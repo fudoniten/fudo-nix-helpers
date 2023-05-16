@@ -1,11 +1,11 @@
 { lib, pkgs, jdkRunner, mkCljBin, ... }:
 
 with lib;
-mkCljBin {
-  inherit jdkRunner;
+let projectSrc = ./.;
+in mkCljBin {
+  inherit jdkRunner projectSrc;
   name = "org.fudo/injector";
   version = "0.1";
-  projectSrc = ./.;
   main-ns = "injector.cli";
-  lockfile = "${src}/deps-lock.json";
+  lockfile = "${projectSrc}/deps-lock.json";
 }
