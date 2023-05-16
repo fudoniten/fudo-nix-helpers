@@ -35,7 +35,8 @@ let
   };
 
 in stdenv.mkDerivation {
-  inherit name version;
+  name = "${name}.jar";
+  inherit version;
   phases = [ "installPhase" ];
   installPhase = "cp ${stageBuild}/*.jar $out";
 }
