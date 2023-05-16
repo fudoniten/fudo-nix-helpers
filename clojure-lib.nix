@@ -37,5 +37,5 @@ let
 in stdenv.mkDerivation {
   inherit name version;
   phases = [ "installPhase" ];
-  installPhase = "mv ${stageBuild}/*.jar $out";
+  installPhase = "cp ${stageBuild}/*.jar $out";
 }
