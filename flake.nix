@@ -30,7 +30,7 @@
             jdkRunner = default-jdk;
           };
           updateCljDeps = deps:
-            pkgs.stdenv.writeShellApplication {
+            pkgs.writeShellApplication {
               name = "update-deps.sh";
               runtimeInputs =
                 [ (cljInject deps) clj-nix.packages."${system}".deps-lock ];
