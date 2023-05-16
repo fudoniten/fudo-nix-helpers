@@ -1,12 +1,12 @@
-{ pkgs, mkCljLib, jdkRunner, cljInject }:
+{ mkCljLib, jdkRunner, cljInject, stdenv, lib }:
 
-with pkgs.lib;
+with lib;
 
 { name, src, version ? "0.1", buildCommand ? null, checkPhase ? null
 , cljLibs ? { }, ... }:
 
 let
-  depsFile = pkgs.stdenv.mkDerivation {
+  depsFile = stdenv.mkDerivation {
     name = "${name}-deps.edn";
     buildInputs = [ (cljInject cljLibs) ];
     phases = [ "installPhase" ];
@@ -15,7 +15,7 @@ let
       clj-inject ${src}/deps.edn > $out/deps.edn
     '';
   };
-  preppedSrc = pkgs.stdenv.mkDerivation {
+  preppedSrc = stdenv.mkDerivation {
     name = "${name}-prepped";
     phases = [ "installPhase" ];
     installPhase = ''
@@ -25,11 +25,17 @@ let
       cp ${depsFile}/deps.edn $out
     '';
   };
+  stageBuild = mkCljLib {
+    inherit jdkRunner version;
+    name = "${name}-staging";
+    projectSrc = preppedSrc;
+    checkPhase = optionalString (checkPhase != null) checkPhase;
+    lockfile = "${preppedSrc}/deps-lock.json";
+    buildCommand = optionalString (buildCommand != null) buildCommand;
+  };
 
-in mkCljLib {
-  inherit name jdkRunner version;
-  projectSrc = preppedSrc;
-  checkPhase = optionalString (checkPhase != null) checkPhase;
-  lockfile = "${preppedSrc}/deps-lock.json";
-  buildCommand = optionalString (buildCommand != null) buildCommand;
+in stdenv.mkDerivation {
+  inherit name version;
+  phases = [ "installPhase" ];
+  installPhase = "mv ${stageBuild}/.*jar $out";
 }
