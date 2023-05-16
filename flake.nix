@@ -19,23 +19,23 @@
         default-jdk = pkgs.jdk17_headless;
       in {
         packages = with pkgs.lib; rec {
-          mkClojureLib = deps:
-            pkgs.callPackage ./clojure-lib.nix {
+          mkClojureLib = { cljLibs, ... }@args:
+            pkgs.callPackage ./clojure-lib.nix (args // {
               inherit (clj-pkgs) mkCljLib;
+              inherit cljInject;
               jdkRunner = default-jdk;
-              injector = (cljInject deps);
-            };
-          mkClojureBin = deps:
-            pkgs.callPackage ./clojure-bin.nix {
+            });
+          mkClojureBin = { cljLibs, ... }@args:
+            pkgs.callPackage ./clojure-bin.nix (args // {
               inherit (clj-pkgs) mkCljBin;
+              inherit cljInject;
               jdkRunner = default-jdk;
-              injector = (cljInject deps);
-            };
-          updateCljDeps = libs:
+            });
+          updateCljDeps = deps:
             pkgs.stdenv.writeShellApplication {
               name = "update-deps.sh";
               runtimeInputs =
-                [ (cljInject libs) clj-nix.packages."${system}".deps-lock ];
+                [ (cljInject deps) clj-nix.packages."${system}".deps-lock ];
               text = ''
                 if [ ! $# -eq 1 ]; then
                   echo "usage: $0 <deps-file>"
@@ -56,13 +56,13 @@
             inherit (clj-pkgs) mkCljBin;
             jdkRunner = default-jdk;
           };
-          cljInject = libs:
+          cljInject = deps:
             pkgs.writeShellApplication {
               name = "clj-inject";
               runtimeInputs = [ cljInjectScript ];
               text = let
                 injectionString = concatStringsSep " "
-                  (mapAttrsToList (lib: jar: "${lib} ${jar}")) libs;
+                  (mapAttrsToList (lib: jar: "${lib} ${jar}")) deps;
               in "cljInjectScript --deps-file=$1 ${injectionString}";
             };
         };

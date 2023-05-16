@@ -1,14 +1,14 @@
-{ pkgs, mkCljLib, jdkRunner }:
+{ pkgs, mkCljLib, jdkRunner, cljInject }:
 
 with pkgs.lib;
 
-{ name, src, version ? "0.1", buildCommand ? null, checkPhase ? null, injector
-, ... }:
+{ name, src, version ? "0.1", buildCommand ? null, checkPhase ? null
+, cljLibs ? { }, ... }:
 
 let
   depsFile = pkgs.stdenv.mkDerivation {
     name = "${name}-deps.edn";
-    buildInputs = [ injector ];
+    buildInputs = [ (cljInject cljLibs) ];
     phases = [ "installPhase" ];
     installPhase = ''
       mkdir -p $out

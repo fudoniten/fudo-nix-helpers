@@ -3,12 +3,12 @@
 with pkgs.lib;
 
 { name, primaryNamespace, src, version ? "0.1", checkPhase ? null
-, buildCommand ? null, injector, ... }:
+, buildCommand ? null, cljLibs ? { }, ... }:
 
 let
   depsFile = pkgs.stdenv.mkDerivation {
     name = "${name}-deps.edn";
-    buildInputs = [ injector ];
+    buildInputs = [ (cljInject cljLibs) ];
     phases = [ "installPhase" ];
     installPhase = ''
       mkdir -p $out
