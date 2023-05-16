@@ -35,11 +35,14 @@
               runtimeInputs =
                 [ (cljInject deps) clj-nix.packages."${system}".deps-lock ];
               text = ''
-                if [ ! $# -eq 1 ]; then
-                  echo "usage: $0 <deps-file>"
+                if [ $# -eq 0 ]; then
+                  DEPS="$(pwd)/deps.edn"
+                elif [ $# -eq 1 ]; then
+                  DEPS="$1"
+                else
+                  echo "usage: $0 [deps-file]"
                   exit 1
                 fi
-                DEPS=$1
                 SRC=$(pwd)
                 TMP=$(mktemp -d)
                 clj-inject "$DEPS" > "$TMP/deps.edn"
