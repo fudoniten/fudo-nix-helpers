@@ -22,6 +22,7 @@
     (when (seq errors) (usage summary errors))
     (when (not (contains? options :deps-file))
       (usage summary ["missing required argument: deps-file"]))
+    (println (format "replacing: %s" inj-deps))
     (let [deps (-> options :deps-file (slurp) (edn/read-string))]
       (pprint (inject-dependencies deps inj-deps)))
     (System/exit 0)))
