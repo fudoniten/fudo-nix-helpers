@@ -15,4 +15,6 @@
             m))
 
 (defn inject-dependencies [deps inj-deps]
+  (for [[k v] inj-deps]
+    (println (format "updating %s to %s" k v)))
   (recursive-update-key deps :deps (replace-deps inj-deps)))
