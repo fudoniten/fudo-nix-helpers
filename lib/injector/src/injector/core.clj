@@ -2,7 +2,7 @@
   (:require [clojure.edn :as edn]))
 
 (defn- replace-deps [inj-deps]
-  (fn [deps] (reduce (fn [m [k v]] (assoc m k v)) deps inj-deps)))
+  (fn [deps] (reduce (fn [m [k v]] (assoc m k { :local/root v})) deps inj-deps)))
 
 (defn- map-vals [f m]
   (into {} (map (fn [[k v]] [k (f [k v])])) m))
