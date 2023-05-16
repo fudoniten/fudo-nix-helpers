@@ -25,7 +25,6 @@
     (when (not (contains? options :deps-file))
       (.println *err* (usage summary ["missing required argument: deps-file"]))
       (System/exit 1))
-    (println args)
     (let [deps (-> options :deps-file (slurp) (edn/read-string))]
       (pprint (inject-dependencies deps inj-deps)))
     (System/exit 0)))
