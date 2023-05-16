@@ -61,7 +61,7 @@
               text = let
                 injectionString = concatStringsSep " "
                   (mapAttrsToList (lib: jar: "${lib} ${jar}") deps);
-              in ''cljInjectScript --deps-file="$1" ${injectionString}'';
+              in ''injector --deps-file="$1" ${injectionString}'';
             };
         };
       }) // {
