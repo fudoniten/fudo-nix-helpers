@@ -19,18 +19,16 @@
         default-jdk = pkgs.jdk17_headless;
       in {
         packages = with pkgs.lib; rec {
-          mkClojureLib = { cljLibs, ... }@args:
-            pkgs.callPackage ./clojure-lib.nix (args // {
-              inherit (clj-pkgs) mkCljLib;
-              inherit cljInject;
-              jdkRunner = default-jdk;
-            });
-          mkClojureBin = { cljLibs, ... }@args:
-            pkgs.callPackage ./clojure-bin.nix (args // {
-              inherit (clj-pkgs) mkCljBin;
-              inherit cljInject;
-              jdkRunner = default-jdk;
-            });
+          mkClojureLib = pkgs.callPackage ./clojure-lib.nix {
+            inherit (clj-pkgs) mkCljLib;
+            inherit cljInject;
+            jdkRunner = default-jdk;
+          };
+          mkClojureBin = pkgs.callPackage ./clojure-bin.nix {
+            inherit (clj-pkgs) mkCljBin;
+            inherit cljInject;
+            jdkRunner = default-jdk;
+          };
           updateCljDeps = deps:
             pkgs.stdenv.writeShellApplication {
               name = "update-deps.sh";
