@@ -19,10 +19,13 @@
 (defn -main [& args]
   (let [{:keys [options args errors summary]} (parse-opts args cli-opts)
         inj-deps (into {} (partition 2 args))]
-    (when (seq errors) (usage summary errors))
+    (when (seq errors)
+      (.println *err* (usage summary errors))
+      (System/exit 1))
     (when (not (contains? options :deps-file))
-      (usage summary ["missing required argument: deps-file"]))
-    (println (format "replacing: %s" inj-deps))
+      (.println *err* (usage summary ["missing required argument: deps-file"]))
+      (System/exit 1))
+    (println args)
     (let [deps (-> options :deps-file (slurp) (edn/read-string))]
       (pprint (inject-dependencies deps inj-deps)))
     (System/exit 0)))
