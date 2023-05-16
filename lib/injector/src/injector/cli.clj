@@ -18,7 +18,7 @@
 
 (defn -main [& args]
   (let [{:keys [options arguments errors summary]} (parse-opts args cli-opts)
-        inj-deps (into {} (for [[k v] (partition 2 arguments)] [k v]))]
+        inj-deps (into {} (for [[k v] (partition 2 arguments)] [(symbol k) v]))]
     (when (seq errors)
       (.println *err* (usage summary errors))
       (System/exit 1))
