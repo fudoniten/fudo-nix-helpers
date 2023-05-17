@@ -30,12 +30,12 @@ let
     name = "${name}-staging";
     projectSrc = preppedSrc;
     checkPhase = optionalString (checkPhase != null) checkPhase;
-    lockfile = "${preppedSrc}/deps-lock.json";
-    buildCommand = optionalString (buildCommand != null) buildCommand;
+    lockfile = "${src}/deps-lock.json";
+    buildCommand = mkIf (buildCommand != null) buildCommand;
   };
 
 in stdenv.mkDerivation {
-  name = "${name}.jar";
+  name = "${name}-${version}.jar";
   inherit version;
   phases = [ "installPhase" ];
   installPhase = "cp ${stageBuild}/*.jar $out";

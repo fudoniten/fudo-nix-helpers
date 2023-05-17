@@ -32,5 +32,5 @@ in mkCljBin {
   main-ns = primaryNamespace;
   checkPhase = optionalString (checkPhase != null) checkPhase;
   lockfile = "${src}/deps-lock.json";
-  # buildCommand = optionalString (buildCommand != null) buildCommand;
+  buildCommand = mkIf (buildCommand != null) buildCommand;
 }
