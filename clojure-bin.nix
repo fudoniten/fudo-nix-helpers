@@ -11,7 +11,6 @@ let
     buildInputs = [ (cljInject cljLibs) ];
     phases = [ "installPhase" ];
     installPhase = ''
-      mkdir -p $out
       clj-inject ${src}/deps.edn > $out
     '';
   };
