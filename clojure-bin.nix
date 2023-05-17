@@ -15,22 +15,12 @@ let
       clj-inject ${src}/deps.edn > $out/deps.edn
     '';
   };
-  preppedSrc = stdenv.mkDerivation {
-    name = "${name}-prepped";
-    phases = [ "installPhase" ];
-    installPhase = ''
-      mkdir $out
-      cp -r ${src}/. $out
-      rm $out/deps.edn
-      cp ${depsFile}/deps.edn $out
-    '';
-  };
 
 in mkCljBin {
   inherit name jdkRunner version;
   projectSrc = src;
   main-ns = primaryNamespace;
   checkPhase = optionalString (checkPhase != null) checkPhase;
-  lockfile = "${preppedSrc}/deps-lock.json";
+  lockfile = "${depsFile}";
   buildCommand = optionalString (buildCommand != null) buildCommand;
 }
