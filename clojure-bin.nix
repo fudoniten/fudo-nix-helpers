@@ -1,12 +1,12 @@
-{ pkgs, mkCljBin, jdkRunner, cljInject }:
+{ lib, mkCljBin, jdkRunner, cljInject, stdenv }:
 
-with pkgs.lib;
+with lib;
 
 { name, primaryNamespace, src, version ? "0.1", checkPhase ? null
 , buildCommand ? null, cljLibs ? { }, ... }:
 
 let
-  depsFile = pkgs.stdenv.mkDerivation {
+  depsFile = stdenv.mkDerivation {
     name = "${name}-deps.edn";
     buildInputs = [ (cljInject cljLibs) ];
     phases = [ "installPhase" ];
@@ -15,7 +15,7 @@ let
       clj-inject ${src}/deps.edn > $out/deps.edn
     '';
   };
-  preppedSrc = pkgs.stdenv.mkDerivation {
+  preppedSrc = stdenv.mkDerivation {
     name = "${name}-prepped";
     phases = [ "installPhase" ];
     installPhase = ''
@@ -28,7 +28,7 @@ let
 
 in mkCljBin {
   inherit name jdkRunner version;
-  projectSrc = preppedSrc;
+  projectSrc = src;
   main-ns = primaryNamespace;
   checkPhase = optionalString (checkPhase != null) checkPhase;
   lockfile = "${preppedSrc}/deps-lock.json";
