@@ -12,7 +12,7 @@ let
     phases = [ "installPhase" ];
     installPhase = ''
       mkdir -p $out
-      clj-inject ${src}/deps.edn > $out/deps.edn
+      clj-inject ${src}/deps.edn > $out
     '';
   };
 
