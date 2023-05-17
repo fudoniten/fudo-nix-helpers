@@ -31,8 +31,7 @@ let
     projectSrc = preppedSrc;
     checkPhase = optionalString (checkPhase != null) checkPhase;
     lockfile = "${src}/deps-lock.json";
-    buildCommand = mkIf (buildCommand != null) buildCommand;
-  };
+  } // (optionalAttrs (buildCommand != null) { inherit buildCommand; });
 
 in stdenv.mkDerivation {
   name = "${name}-${version}.jar";
