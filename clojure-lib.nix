@@ -25,13 +25,14 @@ let
       cp ${depsFile}/deps.edn $out
     '';
   };
-  stageBuild = mkCljLib {
+  pthru = o: trace o o;
+  stageBuild = pthru (mkCljLib {
     inherit jdkRunner version;
     name = "${name}-staging";
     projectSrc = preppedSrc;
     checkPhase = optionalString (checkPhase != null) checkPhase;
     lockfile = "${src}/deps-lock.json";
-  } // (optionalAttrs (buildCommand != null) { inherit buildCommand; });
+  } // (optionalAttrs (buildCommand != null) { inherit buildCommand; }));
 
 in stdenv.mkDerivation {
   name = "${name}-${version}.jar";
