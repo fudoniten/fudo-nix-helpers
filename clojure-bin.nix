@@ -26,10 +26,10 @@ let
     '';
   };
 
-in mkCljBin {
+in mkCljBin ({
   inherit name jdkRunner version;
   projectSrc = preppedSrc;
   main-ns = primaryNamespace;
   checkPhase = optionalString (checkPhase != null) checkPhase;
   lockfile = "${src}/deps-lock.json";
-} // (optionalAttrs (buildCommand != null) { inherit buildCommand; })
+} // (optionalAttrs (buildCommand != null) { inherit buildCommand; }))

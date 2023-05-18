@@ -25,8 +25,7 @@ let
       cp ${depsFile}/deps.edn $out
     '';
   };
-  pthru = o: trace o o;
-  stageBuild = pthru (mkCljLib {
+  stageBuild = mkCljLib ({
     inherit jdkRunner version;
     name = "${name}-staging";
     projectSrc = preppedSrc;
