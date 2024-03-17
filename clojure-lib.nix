@@ -15,7 +15,8 @@ let
       clj-inject ${src}/deps.edn > $out/deps.edn
     '';
   };
-  preppedSrc = stdenv.mkDerivation {
+  preppedSrc = let buildClj = ./lib/build.clj;
+  in stdenv.mkDerivation {
     name = "${name}-prepped";
     phases = [ "installPhase" ];
     installPhase = ''
@@ -23,6 +24,7 @@ let
       cp -r ${src}/. $out
       rm $out/deps.edn
       cp ${depsFile}/deps.edn $out
+      cp ${buildClj} $out/build.clj
     '';
   };
   stageBuild = mkCljLib ({
@@ -31,7 +33,10 @@ let
     projectSrc = preppedSrc;
     checkPhase = optionalString (checkPhase != null) checkPhase;
     lockfile = "${src}/deps-lock.json";
-  } // (optionalAttrs (buildCommand != null) { inherit buildCommand; }));
+  } // (optionalAttrs (buildCommand != null) { inherit buildCommand; })
+    // (optionalAttrs (isNull buildCommand) {
+      buildCommand = "clojure -T:build uberjar";
+    }));
 
 in stdenv.mkDerivation {
   name = "${name}-${version}.jar";
