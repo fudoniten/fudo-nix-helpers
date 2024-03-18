@@ -1,4 +1,4 @@
-{ lib, mkCljBin, jdkRunner, cljInject, stdenv }:
+{ lib, mkCljBin, jdkRunner, cljInject, cljBuildInject, stdenv }:
 
 with lib;
 
@@ -8,11 +8,16 @@ with lib;
 let
   depsFile = stdenv.mkDerivation {
     name = "${name}-deps.edn";
-    buildInputs = [ (cljInject cljLibs) ];
+    buildInputs = [
+      (cljInject cljLibs)
+      (cljBuildInject "build" { "io.github.clojure/tools.build" = "0.10.0"; })
+    ];
     phases = [ "installPhase" ];
     installPhase = ''
       mkdir -p $out
-      clj-inject ${src}/deps.edn > $out/deps.edn
+      clj-inject ${src}/deps.edn > $out/pre-deps.edn
+      # FIXME: tmp?
+      clj-build-inject $out/pre-deps.edn > $out/deps.edn
     '';
   };
   preppedSrc = stdenv.mkDerivation {

@@ -21,12 +21,12 @@
         packages = with pkgs.lib; rec {
           mkClojureLib = pkgs.callPackage ./clojure-lib.nix {
             inherit (clj-pkgs) mkCljLib;
-            inherit cljInject;
+            inherit cljInject cljBuildInject;
             jdkRunner = default-jdk;
           };
           mkClojureBin = pkgs.callPackage ./clojure-bin.nix {
             inherit (clj-pkgs) mkCljBin;
-            inherit cljInject;
+            inherit cljInject cljBuildInject;
             jdkRunner = default-jdk;
           };
           updateCljDeps = deps:
@@ -57,6 +57,11 @@
             inherit (clj-pkgs) mkCljBin;
             jdkRunner = default-jdk;
           };
+          cljBuildInjectScript =
+            pkgs.callPackage ./lib/build-injector/package.nix {
+              inherit (clj-pkgs) mkCljBin;
+              jdkRunner = default-jdk;
+            };
           cljInject = deps:
             pkgs.writeShellApplication {
               name = "clj-inject";
@@ -65,6 +70,16 @@
                 injectionString = concatStringsSep " "
                   (mapAttrsToList (lib: jar: "${lib} ${jar}") deps);
               in ''injector --deps-file="$1" ${injectionString}'';
+            };
+          cljBuildInject = ns: deps:
+            pkgs.writeShellApplication {
+              name = "clj-build-inject";
+              runtimeInputs = [ cljBuildInjectScript ];
+              text = let
+                injectionString = concatStringsSep " "
+                  (mapAttrsToList (lib: ver: "${lib} ${ver}") deps);
+              in ''
+                build-injector --deps-file="$1" --namespace=${ns} ${injectionString}'';
             };
         };
       }) // {
