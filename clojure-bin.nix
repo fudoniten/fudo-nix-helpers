@@ -15,9 +15,8 @@ let
     phases = [ "installPhase" ];
     installPhase = ''
       mkdir -p $out
-      clj-inject ${src}/deps.edn > $out/pre-deps.edn
-      # FIXME: tmp?
-      clj-build-inject $out/pre-deps.edn > $out/deps.edn
+      clj-inject ${src}/deps.edn > pre-deps.edn
+      clj-build-inject pre-deps.edn > $out/deps.edn
     '';
   };
   preppedSrc = stdenv.mkDerivation {
