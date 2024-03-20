@@ -3,7 +3,8 @@
             [clojure.pprint :refer [pprint]]
             [clojure.string :as str]
             [clojure.tools.cli :refer [parse-opts]]
-            [injector.core :refer [inject-dependencies]])
+            [build-injector.core :refer [inject-build-dependencies
+                                         inject-build-namespace]])
   (:gen-class))
 
 (def cli-opts
