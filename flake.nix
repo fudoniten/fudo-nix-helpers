@@ -32,8 +32,11 @@
           updateCljDeps = deps:
             pkgs.writeShellApplication {
               name = "update-deps.sh";
-              runtimeInputs =
-                [ (cljInject deps) clj-nix.packages."${system}".deps-lock ];
+              runtimeInputs = [
+                (cljInject deps)
+                (cljBuildInject "build" deps)
+                clj-nix.packages."${system}".deps-lock
+              ];
               text = ''
                 if [ $# -eq 0 ]; then
                   DEPS="$(pwd)/deps.edn"
@@ -45,7 +48,8 @@
                 fi
                 SRC=$(pwd)
                 TMP=$(mktemp -d)
-                clj-inject "$DEPS" > "$TMP/deps.edn"
+                clj-inject "$DEPS" > "$TMP/deps-prebuild.edn"
+                clj-build-inject "$TMP/deps-prebuild.edn" > "$TMP/deps.edn"
                 cd "$TMP"
                 deps-lock
                 mv "$TMP/deps-lock.json" "$SRC/deps-lock.json"
