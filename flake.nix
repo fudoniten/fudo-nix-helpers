@@ -29,7 +29,7 @@
             inherit cljInject cljBuildInject;
             jdkRunner = default-jdk;
           };
-          updateCljDeps = deps:
+          updateClojureDeps = deps:
             pkgs.writeShellApplication {
               name = "update-deps.sh";
               runtimeInputs = [
@@ -55,8 +55,8 @@
                 mv "$TMP/deps-lock.json" "$SRC/deps-lock.json"
               '';
             };
-          updateClojureDeps = pkgs.writeShellScriptBin "update-deps.sh"
-            "${clj-nix.packages."${system}".deps-lock}/bin/deps-lock";
+          # updateClojureDeps = pkgs.writeShellScriptBin "update-deps.sh"
+          #   "${clj-nix.packages."${system}".deps-lock}/bin/deps-lock";
           cljInjectScript = pkgs.callPackage ./lib/injector/package.nix {
             inherit (clj-pkgs) mkCljBin;
             jdkRunner = default-jdk;
