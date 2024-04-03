@@ -40,18 +40,23 @@ let
     lockfile = "${src}/deps-lock.json";
   } // (optionalAttrs (!isNull buildCommand) { inherit buildCommand; })
     // (optionalAttrs (isNull buildCommand) {
-      buildCommand = concatStringsSep " " [
-        "clojure -T:build"
-        "uberjar"
-        ":name"
-        name
-        ":target ./target"
-        ":verbose true"
-        ":version"
-        version
-        ":clj-src"
-        "${preppedSrc}"
-      ];
+      buildCommand = let
+        cmd = concatStringsSep " " [
+          "clojure -T:build"
+          "uberjar"
+          ":name"
+          name
+          ":target ./target"
+          ":verbose true"
+          ":version"
+          version
+          ":clj-src"
+          "${preppedSrc}"
+        ];
+      in ''
+        echo ${cmd}
+        ${cmd}
+      '';
     }));
 
 in stdenv.mkDerivation {
