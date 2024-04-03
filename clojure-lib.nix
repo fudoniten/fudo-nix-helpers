@@ -61,5 +61,5 @@ in stdenv.mkDerivation {
   name = "${name}-${version}.jar";
   inherit version;
   phases = [ "installPhase" ];
-  installPhase = "cp ${stageBuild}/*.jar $out";
+  installPhase = pthru "cp ${stageBuild}/*.jar $out";
 }
