@@ -59,7 +59,7 @@
                 :class-dir  class-dir
                 :basis      basis
                 :javac-opts ["-source" "16" "-target" "16"]})
-      (update params :src-dirs conj java-src))
+      (update params :src-dirs concat java-src))
     (do (when verbose (println (format "skipping java compile, no java-src specified...")))
         params)))
 
@@ -70,7 +70,7 @@
       (b/compile-clj {:basis     basis
                       :src-dirs  clj-src
                       :class-dir class-dir})
-      (update params :src-dirs conj clj-src))
+      (update params :src-dirs concat clj-src))
     (do (when verbose (println (format "skipping clj compile, no clj-src specified...")))
         params)))
 
