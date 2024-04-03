@@ -52,7 +52,7 @@
                 TMP=$(mktemp -d)
                 clj-inject "$DEPS" > "$TMP/deps-prebuild.edn"
                 clj-build-inject "$TMP/deps-prebuild.edn" > "$TMP/deps.edn"
-                cat "DEPS.EDN:"
+                echo "DEPS.EDN:"
                 cat "$TMP/deps.edn"
                 cd "$TMP"
                 deps-lock
