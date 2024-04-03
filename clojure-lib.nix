@@ -52,6 +52,8 @@ let
         ":verbose true"
         ":version"
         version
+        ":clj-src"
+        "."
       ]);
     }));
 
