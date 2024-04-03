@@ -17,6 +17,7 @@ let
       mkdir -p $out
       clj-inject ${src}/deps.edn > pre-deps.edn
       clj-build-inject pre-deps.edn > $out/deps.edn
+      cat $out/deps.edn
     '';
   };
   preppedSrc = let buildClj = ./lib/build.clj;
@@ -37,7 +38,7 @@ let
     projectSrc = preppedSrc;
     checkPhase = optionalString (checkPhase != null) checkPhase;
     lockfile = "${src}/deps-lock.json";
-  } // (optionalAttrs (buildCommand != null) { inherit buildCommand; })
+  } // (optionalAttrs (!isNull buildCommand) { inherit buildCommand; })
     // (optionalAttrs (isNull buildCommand) {
       buildCommand = concatStringsSep " " [
         "clojure -T:build"
@@ -49,7 +50,7 @@ let
         ":version"
         version
         ":clj-src"
-        src
+        preppedSrc
       ];
     }));
 
