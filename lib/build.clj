@@ -53,7 +53,7 @@
 
 (defn compile-java [{:keys [verbose java-src class-dir basis] :as params}]
   (if java-src
-    (let [java-src (str/split "," (str java-src))]
+    (let [java-src (str/split #"," (str java-src))]
       (when verbose (println (format "compiling java files in %s..." java-src)))
       (b/javac {:src-dirs   java-src
                 :class-dir  class-dir
@@ -65,7 +65,7 @@
 
 (defn compile-clj [{:keys [verbose clj-src class-dir basis] :as params}]
   (if clj-src
-    (let [clj-src (str/split "," (str clj-src))]
+    (let [clj-src (str/split #"," (str clj-src))]
       (when verbose (println (format "compiling clj files in %s..." clj-src)))
       (b/compile-clj {:basis     basis
                       :src-dirs  clj-src
