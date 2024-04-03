@@ -34,7 +34,9 @@
               name = "update-deps.sh";
               runtimeInputs = [
                 (cljInject deps)
-                (cljBuildInject "build" deps)
+                (cljBuildInject "build" {
+                  "io.github.clojure/tools.build" = "v0.10.0";
+                })
                 clj-nix.packages."${system}".deps-lock
               ];
               text = ''
@@ -84,7 +86,6 @@
                 injectionString = concatStringsSep " "
                   (mapAttrsToList (lib: ver: "${lib} ${ver}") deps);
               in ''
-                echo build-injector --deps-file="$1" --build-namespace=${ns} ${injectionString}
                 build-injector --deps-file="$1" --build-namespace=${ns} ${injectionString}'';
             };
         };

@@ -12,7 +12,7 @@
    [nil "--build-namespace NAMESPACE" "Namespace in which to find build functions."]])
 
 (defn- usage [summary errors]
-  (->> (concat errors ["usage: injector [opts] [[<library> <jar-file>] ...]"
+  (->> (concat errors ["usage: injector [opts] [[<library> <version>] ...]"
                        ""
                        "Options:"
                        summary])
