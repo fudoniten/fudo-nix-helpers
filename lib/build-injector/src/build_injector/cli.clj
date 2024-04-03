@@ -4,7 +4,8 @@
             [clojure.string :as str]
             [clojure.tools.cli :refer [parse-opts]]
             [build-injector.core :refer [inject-build-dependencies
-                                         inject-build-namespace]])
+                                         inject-build-namespace
+                                         inject-src-dir]])
   (:gen-class))
 
 (def cli-opts
