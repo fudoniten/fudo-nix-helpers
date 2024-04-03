@@ -40,7 +40,7 @@ let
     name = "${name}-staging";
     projectSrc = preppedSrc;
     checkPhase = optionalString (checkPhase != null) checkPhase;
-    lockfile = "${preppedSrc}/deps-lock.json";
+    lockfile = "deps-lock.json";
   } // (optionalAttrs (!isNull buildCommand) { inherit buildCommand; })
     // (optionalAttrs (isNull buildCommand) {
       buildCommand = pthru (concatStringsSep " " [
@@ -52,8 +52,6 @@ let
         ":verbose true"
         ":version"
         version
-        ":clj-src"
-        "'\"${preppedSrc}\"'"
       ]);
     }));
 
