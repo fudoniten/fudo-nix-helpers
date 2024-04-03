@@ -37,26 +37,21 @@ let
     name = "${name}-staging";
     projectSrc = preppedSrc;
     checkPhase = optionalString (checkPhase != null) checkPhase;
-    lockfile = "${src}/deps-lock.json";
+    lockfile = "${preppedSrc}/deps-lock.json";
   } // (optionalAttrs (!isNull buildCommand) { inherit buildCommand; })
     // (optionalAttrs (isNull buildCommand) {
-      buildCommand = let
-        cmd = concatStringsSep " " [
-          "clojure -T:build"
-          "uberjar"
-          ":name"
-          name
-          ":target ./target"
-          ":verbose true"
-          ":version"
-          version
-          ":clj-src"
-          "${preppedSrc}"
-        ];
-      in ''
-        echo ${cmd}
-        ${cmd}
-      '';
+      buildCommand = concatStringsSep " " [
+        "clojure -T:build"
+        "uberjar"
+        ":name"
+        name
+        ":target ./target"
+        ":verbose true"
+        ":version"
+        version
+        ":clj-src"
+        "${preppedSrc}"
+      ];
     }));
 
 in stdenv.mkDerivation {
