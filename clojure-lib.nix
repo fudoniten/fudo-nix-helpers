@@ -6,6 +6,8 @@ with lib;
 , cljLibs ? { }, ... }:
 
 let
+  pthru = o: trace o o;
+
   depsFile = stdenv.mkDerivation {
     name = "${name}-deps.edn";
     buildInputs = [
@@ -40,7 +42,7 @@ let
     lockfile = "${preppedSrc}/deps-lock.json";
   } // (optionalAttrs (!isNull buildCommand) { inherit buildCommand; })
     // (optionalAttrs (isNull buildCommand) {
-      buildCommand = concatStringsSep " " [
+      buildCommand = pthru concatStringsSep " " [
         "clojure -T:build"
         "uberjar"
         ":name"
