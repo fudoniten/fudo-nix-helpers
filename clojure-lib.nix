@@ -52,7 +52,7 @@ let
         ":version"
         version
         ":clj-src"
-        "."
+        "src"
       ]);
     }));
 
