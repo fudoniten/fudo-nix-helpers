@@ -57,28 +57,29 @@
             };
           # updateClojureDeps = pkgs.writeShellScriptBin "update-deps.sh"
           #   "${clj-nix.packages."${system}".deps-lock}/bin/deps-lock";
-          cljInjectScript = pkgs.callPackage ./lib/injector/package.nix {
-            inherit (clj-pkgs) mkCljBin;
-            jdkRunner = default-jdk;
-          };
-          cljBuildInjectScript =
-            pkgs.callPackage ./lib/build-injector/package.nix {
-              inherit (clj-pkgs) mkCljBin;
-              jdkRunner = default-jdk;
-            };
           cljInject = deps:
-            pkgs.writeShellApplication {
+            let
+              script = pkgs.callPackage ./lib/injector/package.nix {
+                inherit (clj-pkgs) mkCljBin;
+                jdkRunner = default-jdk;
+              };
+            in pkgs.writeShellApplication {
               name = "clj-inject";
-              runtimeInputs = [ cljInjectScript ];
+              runtimeInputs = [ script ];
               text = let
                 injectionString = concatStringsSep " "
                   (mapAttrsToList (lib: jar: "${lib} ${jar}") deps);
               in ''injector --deps-file="$1" ${injectionString}'';
             };
           cljBuildInject = ns: deps:
-            pkgs.writeShellApplication {
+            let
+              script = pkgs.callPackage ./lib/build-injector/package.nix {
+                inherit (clj-pkgs) mkCljBin;
+                jdkRunner = default-jdk;
+              };
+            in pkgs.writeShellApplication {
               name = "clj-build-inject";
-              runtimeInputs = [ cljBuildInjectScript ];
+              runtimeInputs = [ script ];
               text = let
                 injectionString = concatStringsSep " "
                   (mapAttrsToList (lib: ver: "${lib} ${ver}") deps);
