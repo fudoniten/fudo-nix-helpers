@@ -14,4 +14,6 @@
                             inj-deps)))))
 
 (defn inject-src-dir [deps dir]
-  (update deps :paths concat [dir]))
+  (-> deps
+      (update :paths concat [dir])
+      (update :paths vec)))
