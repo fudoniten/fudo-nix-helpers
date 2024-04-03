@@ -2,8 +2,8 @@
 
 with lib;
 
-{ name, src, version ? "0.1", buildCommand ? null, checkPhase ? null
-, cljLibs ? { }, ... }:
+{ name, src, version ? "0.1", clojure-src-dirs ? [ "src" ], java-src-dirs ? [ ]
+, buildCommand ? null, checkPhase ? null, cljLibs ? { }, ... }:
 
 let
   pthru = o: trace o o;
@@ -42,7 +42,7 @@ let
     lockfile = "deps-lock.json";
   } // (optionalAttrs (!isNull buildCommand) { inherit buildCommand; })
     // (optionalAttrs (isNull buildCommand) {
-      buildCommand = pthru (concatStringsSep " " [
+      buildCommand = concatStringsSep " " ([
         "clojure -T:build"
         "uberjar"
         ":name"
@@ -52,8 +52,11 @@ let
         ":version"
         version
         ":clj-src"
-        "src"
-      ]);
+        (concatStringsSep "," clojure-src-dirs)
+      ] ++ (optionals (java-src-dirs != [ ]) [
+        ":java-src"
+        (concatStringsSep "," java-src-dirs)
+      ]));
     }));
 
 in stdenv.mkDerivation {
