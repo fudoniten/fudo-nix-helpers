@@ -6,8 +6,6 @@ with lib;
 , buildCommand ? null, checkPhase ? null, cljLibs ? { }, ... }:
 
 let
-  pthru = o: trace o o;
-
   depsFile = stdenv.mkDerivation {
     name = "${name}-deps.edn";
     buildInputs = [
@@ -64,5 +62,5 @@ in stdenv.mkDerivation {
   inherit version;
   phases = [ "installPhase" ];
   src = stageBuild;
-  installPhase = pthru "cp $src/*.jar $out";
+  installPhase = "cp $src/*.jar $out";
 }
