@@ -84,6 +84,7 @@
                 injectionString = concatStringsSep " "
                   (mapAttrsToList (lib: ver: "${lib} ${ver}") deps);
               in ''
+                echo build-injector --deps-file="$1" --build-namespace=${ns} ${injectionString}
                 build-injector --deps-file="$1" --build-namespace=${ns} ${injectionString}'';
             };
         };
