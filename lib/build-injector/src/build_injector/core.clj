@@ -12,8 +12,3 @@
                             (map (fn [[dep ver]]
                                    {(symbol dep) { :mvn/version ver }}))
                             inj-deps)))))
-
-(defn inject-src-dir [deps dir]
-  (-> deps
-      (update :paths concat [dir])
-      (update :paths vec)))

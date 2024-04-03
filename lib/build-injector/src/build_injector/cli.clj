@@ -4,8 +4,7 @@
             [clojure.string :as str]
             [clojure.tools.cli :refer [parse-opts]]
             [build-injector.core :refer [inject-build-dependencies
-                                         inject-build-namespace
-                                         inject-src-dir]])
+                                         inject-build-namespace]])
   (:gen-class))
 
 (def cli-opts
@@ -33,6 +32,5 @@
     (let [deps (-> options :deps-file (slurp) (edn/read-string))]
       (pprint (-> deps
                   (inject-build-dependencies inj-deps)
-                  (inject-src-dir "build")
                   (inject-build-namespace (:build-namespace options)))))
     (System/exit 0)))
