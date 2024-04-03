@@ -50,7 +50,7 @@ let
         ":version"
         version
         ":clj-src"
-        ''"${preppedSrc}"''
+        "'\"${preppedSrc}\"'"
       ];
     }));
 
