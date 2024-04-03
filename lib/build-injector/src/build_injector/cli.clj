@@ -32,5 +32,6 @@
     (let [deps (-> options :deps-file (slurp) (edn/read-string))]
       (pprint (-> deps
                   (inject-build-dependencies inj-deps)
+                  (inject-src-dir "build")
                   (inject-build-namespace (:build-namespace options)))))
     (System/exit 0)))

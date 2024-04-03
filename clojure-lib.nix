@@ -31,7 +31,8 @@ let
       cp -r ${src}/. $out
       rm $out/deps.edn
       cp ${depsFile}/deps.edn $out
-      cp ${buildClj} $out/build.clj
+      mkdir $out/build
+      cp ${buildClj} $out/build/build.clj
     '';
   };
   stageBuild = mkCljLib ({
