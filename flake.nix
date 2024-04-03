@@ -35,7 +35,7 @@
               runtimeInputs = [
                 (cljInject deps)
                 (cljBuildInject "build" {
-                  "io.github.clojure/tools.build" = "v0.10.0";
+                  "io.github.clojure/tools.build" = "0.10.0";
                 })
                 clj-nix.packages."${system}".deps-lock
               ];
