@@ -7,10 +7,12 @@ with lib;
 , buildCommand ? null, checkPhase ? null, cljLibs ? { }, ... }:
 
 let
+  cljLibsStringified = mapAttrs (_: path: "${path}") cljLibs;
+
   depsFile = stdenv.mkDerivation {
     name = "${name}-deps.edn";
     buildInputs = [
-      (cljInject cljLibs)
+      (cljInject cljLibsStringified)
       (cljBuildInject "build" {
         "io.github.clojure/tools.build" = cljBuildToolsVersion;
       })
