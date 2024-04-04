@@ -1,4 +1,5 @@
-{ mkCljLib, jdkRunner, cljInject, cljBuildInject, stdenv, lib }:
+{ mkCljLib, jdkRunner, cljInject, cljBuildInject, cljBuildToolsVersion, stdenv
+, lib }:
 
 with lib;
 
@@ -10,7 +11,9 @@ let
     name = "${name}-deps.edn";
     buildInputs = [
       (cljInject cljLibs)
-      (cljBuildInject "build" { "io.github.clojure/tools.build" = "0.10.0"; })
+      (cljBuildInject "build" {
+        "io.github.clojure/tools.build" = cljBuildToolsVersion;
+      })
     ];
     phases = [ "installPhase" ];
     installPhase = ''

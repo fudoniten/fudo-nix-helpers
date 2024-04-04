@@ -1,11 +1,11 @@
 {
   inputs = {
+    nixpkgs.url = "nixpkgs/nixos-23.11";
     clj-nix = {
       url = "github:jlesquembre/clj-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     clj2nix.url = "github:hlolli/clj2nix";
-    nixpkgs.url = "nixpkgs/nixos-22.11";
     utils.url = "github:numtide/flake-utils";
   };
 
@@ -17,16 +17,18 @@
         clj-pkgs = clj-nix.packages."${system}";
 
         default-jdk = pkgs.jdk17_headless;
+
+        cljBuildToolsVersion = "0.10.0";
       in {
         packages = with pkgs.lib; rec {
           mkClojureLib = pkgs.callPackage ./clojure-lib.nix {
             inherit (clj-pkgs) mkCljLib;
-            inherit cljInject cljBuildInject;
+            inherit cljInject cljBuildInject cljBuildToolsVersion;
             jdkRunner = default-jdk;
           };
           mkClojureBin = pkgs.callPackage ./clojure-bin.nix {
             inherit (clj-pkgs) mkCljBin;
-            inherit cljInject cljBuildInject;
+            inherit cljInject cljBuildInject cljBuildToolsVersion;
             jdkRunner = default-jdk;
           };
           updateClojureDeps = deps:
@@ -35,7 +37,7 @@
               runtimeInputs = [
                 (cljInject deps)
                 (cljBuildInject "build" {
-                  "io.github.clojure/tools.build" = "0.10.0";
+                  "io.github.clojure/tools.build" = cljBuildToolsVersion;
                 })
                 clj-nix.packages."${system}".deps-lock
               ];
