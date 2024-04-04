@@ -17,9 +17,11 @@ let
       mkdir -p $out
       clj-inject ${src}/deps.edn > pre-deps.edn
       clj-build-inject pre-deps.edn > $out/deps.edn
+      cat $out/deps.edn
     '';
   };
-  preppedSrc = stdenv.mkDerivation {
+  preppedSrc = let buildClj = ./lib/build.clj;
+  in stdenv.mkDerivation {
     name = "${name}-prepped";
     phases = [ "installPhase" ];
     installPhase = ''
@@ -27,6 +29,7 @@ let
       cp -r ${src}/. $out
       rm $out/deps.edn
       cp ${depsFile}/deps.edn $out
+      cp ${buildClj} $out/build.clj
     '';
   };
 
