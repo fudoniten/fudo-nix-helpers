@@ -1,4 +1,4 @@
-{ name, text, pkgs, runtimeInputs ? [ ], ruby ? pkgs.ruby_3_1, libInputs ? [ ]
+{ name, text, pkgs, runtimeInputs ? [ ], ruby ? pkgs.ruby_3_3, libInputs ? [ ]
 , rubocop ? pkgs.rubocop, checkPhase ? null }:
 
 with pkgs.lib;
