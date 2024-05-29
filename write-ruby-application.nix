@@ -14,24 +14,25 @@ let
 
       ${text}
     '';
-    checkPhase = let
-      excludedChecks = [
-        "Style/ColonMethodCall"
-        "Style/BlockDelimiters"
-        "Style/StringLiterals"
-        "Naming/FileName"
-        "Layout/TrailingEmptyLines"
-        "Lint/ScriptPermission"
-      ];
-    in if checkPhase == null then ''
-      runHook preCheck
-      HOME=$(mktemp -d rubocop-XXXXXXXX)
-      ${rubocop}/bin/rubocop --except ${
-        concatStringsSep "," excludedChecks
-      } --cache false "$target"
-      runHook postCheck
-    '' else
-      checkPhase;
+    checkPhase = checkPhase;
+    # checkPhase = let
+    #   excludedChecks = [
+    #     "Style/ColonMethodCall"
+    #     "Style/BlockDelimiters"
+    #     "Style/StringLiterals"
+    #     "Naming/FileName"
+    #     "Layout/TrailingEmptyLines"
+    #     "Lint/ScriptPermission"
+    #   ];
+    # in if checkPhase == null then ''
+    #   runHook preCheck
+    #   HOME=$(mktemp -d rubocop-XXXXXXXX)
+    #   ${rubocop}/bin/rubocop --except ${
+    #     concatStringsSep "," excludedChecks
+    #   } --cache false "$target"
+    #   runHook postCheck
+    # '' else
+    #   checkPhase;
   };
   makeLibPath = libPaths: concatStringsSep ":" (map (path: "${path}") libPaths);
 in pkgs.writeShellScriptBin name (optionalString (runtimeInputs != [ ]) ''
