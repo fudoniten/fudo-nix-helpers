@@ -1,10 +1,12 @@
 { name, text, pkgs, runtimeInputs ? [ ], ruby ? pkgs.ruby_3_3, libInputs ? [ ]
-, rubocop ? pkgs.rubyPackages_3_3.rubocop, checkPhase ? null }:
+, rubocop ? pkgs.rubyPackages_3_3.rubocop, lib ? pkgs.lib
+, writeTextFile ? pkgs.writeTextFile
+, writeShellScriptBin ? pkgs.writeShellScriptBin, checkPhase ? null }:
 
-with pkgs.lib;
+with lib;
 let
   ruby-name = "${name}-ruby";
-  rubyExec = pkgs.writeTextFile {
+  rubyExec = writeTextFile {
     name = ruby-name;
     meta.mainProgram = ruby-name;
     executable = true;
@@ -15,6 +17,7 @@ let
       ${text}
     '';
     checkPhase = checkPhase;
+    ## Damn: uses obsolete packages
     # checkPhase = let
     #   excludedChecks = [
     #     "Style/ColonMethodCall"
@@ -35,7 +38,7 @@ let
     #   checkPhase;
   };
   makeLibPath = libPaths: concatStringsSep ":" (map (path: "${path}") libPaths);
-in pkgs.writeShellScriptBin name (optionalString (runtimeInputs != [ ]) ''
+in writeShellScriptBin name (optionalString (runtimeInputs != [ ]) ''
   export PATH="${makeBinPath runtimeInputs}:$PATH"
 '' + (optionalString (libInputs != [ ]) ''
   export RUBYLIB="${makeLibPath libInputs}"
