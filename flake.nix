@@ -63,29 +63,27 @@
             };
           # updateClojureDeps = pkgs.writeShellScriptBin "update-deps.sh"
           #   "${clj-nix.packages."${system}".deps-lock}/bin/deps-lock";
-          cljInject = deps:
-            let
-              script = pkgs.callPackage ./lib/injector/package.nix {
-                inherit (clj-pkgs) mkCljBin;
-                jdkRunner = default-jdk;
-              };
-            in pkgs.writeShellApplication {
-              name = "clj-inject";
-              runtimeInputs = [ script ];
-              text = let
-                injectionString = concatStringsSep " "
-                  (mapAttrsToList (lib: jar: "${lib} ${jar}") deps);
-              in ''injector --deps-file="$1" ${injectionString}'';
+          cljInjectBin = pkgs.callPackage ./lib/injector/package.nix {
+            inherit (clj-pkgs) mkCljBin;
+            jdkRunner = default-jdk;
+          };
+          cljInject = "deps:pkgs.writeShellApplication" {
+            name = "clj-inject";
+            runtimeInputs = [ cljInjectBin ];
+            text = let
+              injectionString = concatStringsSep " "
+                (mapAttrsToList (lib: jar: "${lib} ${jar}") deps);
+            in ''injector --deps-file="$1" ${injectionString}'';
+          };
+          cljBuildInjectBin =
+            pkgs.callPackage ./lib/build-injector/package.nix {
+              inherit (clj-pkgs) mkCljBin;
+              jdkRunner = default-jdk;
             };
           cljBuildInject = ns: deps:
-            let
-              script = pkgs.callPackage ./lib/build-injector/package.nix {
-                inherit (clj-pkgs) mkCljBin;
-                jdkRunner = default-jdk;
-              };
-            in pkgs.writeShellApplication {
+            pkgs.writeShellApplication {
               name = "clj-build-inject";
-              runtimeInputs = [ script ];
+              runtimeInputs = [ cljBuildInjectBin ];
               text = let
                 injectionString = concatStringsSep " "
                   (mapAttrsToList (lib: ver: "${lib} ${ver}") deps);
