@@ -67,7 +67,7 @@
             inherit (clj-pkgs) mkCljBin;
             jdkRunner = default-jdk;
           };
-          cljInject = "deps:pkgs.writeShellApplication" {
+          cljInject = pkgs.writeShellApplication {
             name = "clj-inject";
             runtimeInputs = [ cljInjectBin ];
             text = let
