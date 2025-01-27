@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "nixpkgs/nixos-24.05";
+    nixpkgs.url = "nixpkgs/nixos-24.11";
     clj-nix = {
       url = "github:jlesquembre/clj-nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -18,7 +18,7 @@
 
         default-jdk = pkgs.jdk17_headless;
 
-        cljBuildToolsVersion = "0.10.5";
+        cljBuildToolsVersion = "0.10.6";
       in {
         packages = with pkgs.lib; rec {
           mkClojureLib = pkgs.callPackage ./clojure-lib.nix {
