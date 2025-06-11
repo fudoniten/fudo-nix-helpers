@@ -1,8 +1,8 @@
 {
   inputs = {
-    nixpkgs.url = "nixpkgs/nixos-24.11";
+    nixpkgs.url = "nixpkgs/nixos-25.05";
     clj-nix = {
-      url = "github:jlesquembre/clj-nix";
+      url = "github:jlesquembre/clj-nix/0.4.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     clj2nix.url = "github:hlolli/clj2nix";

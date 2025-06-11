@@ -1,11 +1,11 @@
+
 (ns build
   (:require [clojure.tools.build.api :as b]
             [clojure.pprint :refer [pprint]]
             [clojure.edn :as edn]
             [clojure.java.io :as io]
             [clojure.string :as str]
-            [clojure.set :refer [difference]])
-  (:import java.io.File))
+            [clojure.set :refer [difference]]))
 
 (def required-keys
   #{:verbose
@@ -16,8 +16,6 @@
     :namespace
     :name
     :target})
-
-(defn- pthru [o] (pprint o) o)
 
 (defn lib-name [ns name]
   (symbol (str ns "/" name)))
@@ -82,11 +80,9 @@
             (edn/read-string)))
     (println (format "skipping nonexistent metadata file %s..." filename))))
 
-(defn default [d] (fn [x] (if x x d)))
-
 (defn ensure-keys [m ks]
   (let [missing-keys (->> m (keys) (set) (difference ks))]
-    (when (not (empty? missing-keys))
+    (when (seq missing-keys)
       (throw (RuntimeException. (format "Missing required keys: %s"
                                         (str/join ", " (map name missing-keys)))))))
   m)
@@ -122,13 +118,6 @@
   (when verbose (println (format "copying source files from %s to %s..."
                                  src-dirs class-dir)))
   (b/copy-dir {:src-dirs src-dirs :target-dir class-dir})
-  params)
-
-(defn- print-params [params]
-  (when (:verbose params)
-    (println "parameters: ")
-    (pprint params)
-    (println))
   params)
 
 (defn- finalize [params]
