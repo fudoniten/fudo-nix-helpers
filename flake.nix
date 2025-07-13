@@ -104,7 +104,8 @@
                 };
                 copyToRoot = pkgs.buildEnv {
                   name = "root";
-                  paths = environmentPackages;
+                  paths = environmentPackages
+                    ++ (with pkgs; [ bashInteractive ]);
                   pathsToLink = [ "/bin" ];
                 };
               }) (tags ++ [ null ]);
