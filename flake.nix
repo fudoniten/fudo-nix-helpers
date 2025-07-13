@@ -118,7 +118,9 @@
                 echo "deploying ${
                   toString (length containers)
                 } containers for ${name}..."'')
-            ] ++ (map (container: "${container.copyToRegistry}") containers)));
+            ] ++ (map
+              (container: "${container.copyToRegistry}/bin/copy-to-registry")
+              containers)));
         };
       }) // {
         lib = { writeRubyApplication = import ./write-ruby-application.nix; };
