@@ -97,7 +97,6 @@
             in map (tag:
               containerPkgs.nix2container.buildImage ({
                 name = "${repo}/${name}";
-                tag = optional (!isNull tag) tag;
                 config = {
                   entrypoint = entrypoint;
                   inherit env;
