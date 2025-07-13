@@ -7,9 +7,10 @@
     };
     clj2nix.url = "github:hlolli/clj2nix";
     utils.url = "github:numtide/flake-utils";
+    nix2container.url = "github:nlewo/nix2container";
   };
 
-  outputs = { self, nixpkgs, clj2nix, clj-nix, utils, ... }:
+  outputs = { self, nixpkgs, clj-nix, utils, nix2container, ... }:
     utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
@@ -61,8 +62,6 @@
                 mv "$TMP/deps-lock.json" "$SRC/deps-lock.json"
               '';
             };
-          # updateClojureDeps = pkgs.writeShellScriptBin "update-deps.sh"
-          #   "${clj-nix.packages."${system}".deps-lock}/bin/deps-lock";
           cljInjectBin = pkgs.callPackage ./lib/injector/package.nix {
             inherit (clj-pkgs) mkCljBin;
             jdkRunner = default-jdk;
@@ -91,8 +90,36 @@
               in ''
                 build-injector --deps-file="$1" --build-namespace=${ns} ${injectionString}'';
             };
+          makeContainers = { name, entrypoint, env ? [ ]
+            , environmentPackages ? [ ], repo ? "registry.kube.sea.fudo.link"
+            , tags ? [ ], ... }:
+            let containerPkgs = nix2container.packages."${system}";
+            in map (tag:
+              containerPkgs.nix2container.buildImage {
+                name = "${repo}/${name}";
+                tag = mkIf (!isNull tag) tag;
+                config = {
+                  entrypoint = entrypoint;
+                  inherit env;
+                };
+                copyToRoot = pkgs.buildEnv {
+                  name = "root";
+                  paths = environmentPackages;
+                  pathsToLink = [ "/bin" ];
+                };
+              }) (tags ++ [ null ]);
+
+          deployContainers = { name, verbose ? false, ... }@opts:
+            let containers = makeContainers opts;
+            in pkgs.writeShellScript "deploy-${name}-containers.sh"
+            (concatStringsSep "\n" ([
+              (optionalString verbose ''
+                echo "deploying ${
+                  length containers
+                } containers for ${name}..."'')
+            ] ++ (map (container: "${container.copyToRegistry}") containers)));
         };
       }) // {
-        lib.writeRubyApplication = import ./write-ruby-application.nix;
+        lib = { writeRubyApplication = import ./write-ruby-application.nix; };
       };
 }
