@@ -116,7 +116,7 @@
             (concatStringsSep "\n" ([
               (optionalString verbose ''
                 echo "deploying ${
-                  length containers
+                  toString (length containers)
                 } containers for ${name}..."'')
             ] ++ (map (container: "${container.copyToRegistry}") containers)));
         };
