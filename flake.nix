@@ -112,7 +112,7 @@
 
           deployContainers = { name, verbose ? false, ... }@opts:
             let containers = makeContainers opts;
-            in pkgs.writeShellScript "deploy-${name}-containers.sh"
+            in pkgs.writeShellScriptBin "deploy-${name}-containers.sh"
             (concatStringsSep "\n" ([
               (optionalString verbose ''
                 echo "deploying ${
