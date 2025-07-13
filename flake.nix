@@ -95,9 +95,9 @@
             , tags ? [ ], ... }:
             let containerPkgs = nix2container.packages."${system}";
             in map (tag:
-              containerPkgs.nix2container.buildImage {
+              containerPkgs.nix2container.buildImage ({
                 name = "${repo}/${name}";
-                tag = mkIf (!isNull tag) tag;
+                tag = optional (!isNull tag) tag;
                 config = {
                   entrypoint = entrypoint;
                   inherit env;
@@ -108,7 +108,8 @@
                     ++ (with pkgs; [ bashInteractive ]);
                   pathsToLink = [ "/bin" ];
                 };
-              }) (tags ++ [ null ]);
+              } // (optionalAttrs (!isNull tag) { inherit tag; })))
+            (tags ++ [ null ]);
 
           deployContainers = { name, verbose ? false, ... }@opts:
             let containers = makeContainers opts;
