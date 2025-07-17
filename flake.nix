@@ -104,7 +104,7 @@
                 copyToRoot = pkgs.buildEnv {
                   name = "root";
                   paths = environmentPackages
-                    ++ (with pkgs; [ bashInteractive ]);
+                    ++ (with pkgs; [ bashInteractive coreutils dnsutils ]);
                   pathsToLink = [ "/bin" ];
                 };
               } // (optionalAttrs (!isNull tag) { inherit tag; })))
