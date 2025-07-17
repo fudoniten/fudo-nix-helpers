@@ -103,8 +103,15 @@
                 };
                 copyToRoot = pkgs.buildEnv {
                   name = "root";
-                  paths = environmentPackages
-                    ++ (with pkgs; [ bashInteractive coreutils dnsutils ]);
+                  paths = environmentPackages ++ (with pkgs; [
+                    bashInteractive
+                    coreutils
+                    dnsutils
+                    cacert
+                    glibc
+                    glibcLocales
+                    nss
+                  ]);
                   pathsToLink = [ "/bin" ];
                 };
               } // (optionalAttrs (!isNull tag) { inherit tag; })))
