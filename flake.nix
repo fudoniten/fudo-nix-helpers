@@ -91,9 +91,9 @@
                 build-injector --deps-file="$1" --build-namespace=${ns} ${injectionString}'';
             };
 
-          makeContainer = { name, entrypoint, env ? { }
-            , environmentPackages ? [ ], repo, tag, exposedPorts ? [ ]
-            , volumes ? [ ], pathEnv ? [ ], user ? "executor", ... }:
+          makeContainer = { name, entrypoint, repo, env ? { }
+            , environmentPackages ? [ ], tag, exposedPorts ? [ ], volumes ? [ ]
+            , pathEnv ? [ ], user ? "executor", ... }:
             let workDir = "/var/lib/${user}";
             in pkgs.dockerTools.buildLayeredImage {
               name = "${repo}/${name}";
@@ -161,9 +161,8 @@
               };
             };
 
-          deployContainers = { name, verbose ? false
-            , repo ? "registry.kube.sea.fudo.link", tags ? [ "latest" ], ...
-            }@opts:
+          deployContainers =
+            { name, verbose ? false, repo, tags ? [ "latest" ], ... }@opts:
             let
               containerPushScript = concatStringsSep "\n" (map (tag:
                 let container = makeContainer (opts // { inherit tag; });
