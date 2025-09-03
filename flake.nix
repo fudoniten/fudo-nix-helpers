@@ -90,44 +90,106 @@
               in ''
                 build-injector --deps-file="$1" --build-namespace=${ns} ${injectionString}'';
             };
-          makeContainers = { name, entrypoint, env ? [ ]
-            , environmentPackages ? [ ], repo ? "registry.kube.sea.fudo.link"
-            , tags ? [ ], ... }:
-            let containerPkgs = nix2container.packages."${system}";
-            in map (tag:
-              containerPkgs.nix2container.buildImage ({
-                name = "${repo}/${name}";
-                config = {
-                  entrypoint = entrypoint;
-                  inherit env;
-                };
-                copyToRoot = pkgs.buildEnv {
-                  name = "root";
-                  paths = environmentPackages ++ (with pkgs; [
-                    bashInteractive
-                    coreutils
-                    dnsutils
-                    cacert
-                    glibc
-                    glibcLocales
-                    nss
-                  ]);
-                  pathsToLink = [ "/bin" ];
-                };
-              } // (optionalAttrs (!isNull tag) { inherit tag; })))
-            (tags ++ [ null ]);
 
-          deployContainers = { name, verbose ? false, ... }@opts:
-            let containers = makeContainers opts;
-            in pkgs.writeShellScriptBin "deploy-${name}-containers.sh"
-            (concatStringsSep "\n" ([
-              (optionalString verbose ''
-                echo "deploying ${
-                  toString (length containers)
-                } containers for ${name}..."'')
-            ] ++ (map
-              (container: "${container.copyToRegistry}/bin/copy-to-registry")
-              containers)));
+          makeContainer = { name, entrypoint, env ? { }
+            , environmentPackages ? [ ], repo, tag, exposedPorts ? [ ]
+            , volumes ? [ ], pathEnv ? [ ], user ? "executor", ... }:
+            let workDir = "/var/lib/${user}";
+            in pkgs.dockerTools.buildLayeredImage {
+              name = "${repo}/${name}";
+              inherit tag;
+              contents = with pkgs;
+                [
+                  bashInteractive
+                  coreutils
+                  dnsutils
+                  cacert
+                  glibc
+                  glibcLocalesUtf8
+                  nss
+                  tzdata
+                ] ++ environmentPackages ++ pathEnv;
+              enableFakechroot = true;
+              fakeRootCommands = ''
+                ${pkgs.dockerTools.shadowSetup}
+                groupadd -g 1000 ${user}
+                useradd -u 1000 -g ${user} -d ${workDir} -M -r ${user}
+                mkdir -p ${workDir}
+                chown -R ${user}:${user} ${workDir}
+                # link certs/locale for happy TLS + UTF-8 logs
+              '';
+              config = {
+                User = user;
+                WorkingDir = workDir;
+                Env = let
+                  mkEnv = env:
+                    if (isAttrs env) then
+                      mapAttrsToList (k: v: "${k}=${toString v}") env
+                    else
+                      env;
+                in (mkEnv env) ++ (mkEnv (rec {
+                  SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+                  NIX_SSL_CERT_FILE = SSL_CERT_FILE;
+                  LOCALE_ARCHIVE =
+                    "${pkgs.glibcLocalesUtf8}/lib/locale/locale-archive";
+                  LANG = "C.UTF-8";
+                  LC_ALL = "C.UTF-8";
+                  TZ = "UTC";
+                  PATH = makeBinPath pathEnv;
+                }));
+                Entrypoint =
+                  if (isString entrypoint) then [ entrypoint ] else entrypoint;
+                ExposedPorts = if (isList exposedPorts) then
+                  listToAttrs (map (port:
+                    if (isString port) then
+                      nameValuePair port { }
+                    else if (isInt port) then
+                      nameValuePair "${toString port}/tcp" { }
+                    else
+                      nameValuePair
+                      "${toString port.port}/${port.type or "tcp"}")
+                    exposedPorts)
+                else
+                  mapAttrs' (_:
+                    { port, type, ... }@opts:
+                    nameValuePair "${toString port}/${type}" { }) exposedPorts;
+
+                Volumes = if (isList volumes) then
+                  listToAttrs (map (vol: nameValuePair vol { }) volumes)
+                else
+                  volumes;
+              };
+            };
+
+          deployContainers = { name, verbose ? false
+            , repo ? "registry.kube.sea.fudo.link", tags ? [ "latest" ], ...
+            }@opts:
+            let
+              containerPushScript = map (tag:
+                let container = makeContainer (opts // { inherit tag; });
+                in concatStringsSep "\n" ((optional verbose
+                  "echo pushing ${name} -> ${repo}/${name}:${tag}") ++ [
+                    ''
+                      skopeo copy --policy ${policyJson} docker-archive:"${container}" "docker://${repo}/${name}:${tag}"''
+                  ])) tags;
+              policyJson = pkgs.writeText "containers-policy.json"
+                (builtins.toJSON {
+                  default = [{ type = "reject"; }];
+                  transports = {
+                    docker = { "" = [{ type = "insecureAcceptAnything"; }]; };
+                    docker-archive = {
+                      "" = [{ type = "insecureAcceptAnything"; }];
+                    };
+                  };
+                });
+            in pkgs.writeShellApplication {
+              name = "deployContainers";
+              runtimeInputs = with pkgs; [ skopeo coreutils ];
+              text = ''
+                set -euo pipefail
+                ${containerPushScript}
+              '';
+            };
         };
       }) // {
         lib = { writeRubyApplication = import ./write-ruby-application.nix; };
