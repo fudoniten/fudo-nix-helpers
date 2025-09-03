@@ -165,13 +165,13 @@
             , repo ? "registry.kube.sea.fudo.link", tags ? [ "latest" ], ...
             }@opts:
             let
-              containerPushScript = map (tag:
+              containerPushScript = concatStringsSep "\n" (map (tag:
                 let container = makeContainer (opts // { inherit tag; });
                 in concatStringsSep "\n" ((optional verbose
                   "echo pushing ${name} -> ${repo}/${name}:${tag}") ++ [
                     ''
                       skopeo copy --policy ${policyJson} docker-archive:"${container}" "docker://${repo}/${name}:${tag}"''
-                  ])) tags;
+                  ])) tags);
               policyJson = pkgs.writeText "containers-policy.json"
                 (builtins.toJSON {
                   default = [{ type = "reject"; }];
