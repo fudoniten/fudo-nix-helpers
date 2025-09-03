@@ -167,7 +167,7 @@
               containerPushScript = concatStringsSep "\n" (map (tag:
                 let container = makeContainer (opts // { inherit tag; });
                 in concatStringsSep "\n" ((optional verbose
-                  "echo pushing ${name} -> ${repo}/${name}:${tag}") ++ [
+                  ''echo "pushing ${name} -> ${repo}/${name}:${tag}"'') ++ [
                     ''
                       skopeo copy --policy ${policyJson} docker-archive:"${container}" "docker://${repo}/${name}:${tag}"''
                   ])) tags);
