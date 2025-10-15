@@ -28,7 +28,8 @@
       (.println *err* (usage summary ["missing required argument: deps-file"]))
       (System/exit 1))
     (when (not (contains? options :build-namespace))
-      (.println *err* (usage summary ["missing required argument: build-namespace"])))
+      (.println *err* (usage summary ["missing required argument: build-namespace"]))
+      (System/exit 1))
     (let [deps (-> options :deps-file (slurp) (edn/read-string))]
       (pprint (-> deps
                   (inject-build-dependencies inj-deps)
