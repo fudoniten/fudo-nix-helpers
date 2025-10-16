@@ -45,7 +45,9 @@
    :src-dirs  []
    })
 
-(defn clean [{:keys [target] :as params}]
+(defn clean
+  "Remove previously generated build artefacts from the target directory."
+  [{:keys [target] :as params}]
   (b/delete {:path (str target)})
   params)
 
@@ -145,7 +147,9 @@
               :class-dir class-dir})
   params)
 
-(defn jar [params]
+(defn jar
+  "Produce a JAR file using tools.build with some project-specific defaults."
+  [params]
   (-> params
       (process-params)
       (add-basis)
@@ -156,7 +160,9 @@
       (write-jar)
       (finalize)))
 
-(defn uberjar [params]
+(defn uberjar
+  "Produce an uberjar that bundles transitive dependencies."
+  [params]
   (-> params
       (process-params)
       (add-basis)
@@ -167,7 +173,9 @@
       (write-uberjar)
       (finalize)))
 
-(defn install [params]
+(defn install
+  "Install the project artefact into the local Maven repository."
+  [params]
   (-> params
       (process-params)
       (write-jar)
