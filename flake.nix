@@ -94,21 +94,22 @@
           makeContainer = { name, entrypoint, repo, env ? { }
             , environmentPackages ? [ ], tag, exposedPorts ? [ ], volumes ? [ ]
             , pathEnv ? [ ], user ? "executor", ... }:
-            let workDir = "/var/lib/${user}";
+            let
+              workDir = "/var/lib/${user}";
+              basePackages = with pkgs; [
+                bashInteractive
+                coreutils
+                dnsutils
+                cacert
+                glibc
+                glibcLocalesUtf8
+                nss
+                tzdata
+              ];
             in pkgs.dockerTools.buildLayeredImage {
               name = "${repo}/${name}";
               inherit tag;
-              contents = with pkgs;
-                [
-                  bashInteractive
-                  coreutils
-                  dnsutils
-                  cacert
-                  glibc
-                  glibcLocalesUtf8
-                  nss
-                  tzdata
-                ] ++ environmentPackages ++ pathEnv;
+              contents = basePackages ++ environmentPackages ++ pathEnv;
               enableFakechroot = true;
               fakeRootCommands = ''
                 ${pkgs.dockerTools.shadowSetup}
@@ -135,7 +136,7 @@
                   LANG = "C.UTF-8";
                   LC_ALL = "C.UTF-8";
                   TZ = "UTC";
-                  PATH = makeBinPath pathEnv;
+                  PATH = makeBinPath (basePackages ++ pathEnv);
                 }));
                 Entrypoint =
                   if (isString entrypoint) then [ entrypoint ] else entrypoint;
