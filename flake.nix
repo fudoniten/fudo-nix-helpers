@@ -80,11 +80,10 @@
           # Helper script to regenerate deps-lock.json with all injections applied.
           # Usage: nix run .#updateClojureDeps
           #        nix run .#updateClojureDeps -- path/to/deps.edn
-          updateClojureDeps = deps:
-            pkgs.writeShellApplication {
+          updateClojureDeps = pkgs.writeShellApplication {
               name = "update-deps.sh";
               runtimeInputs = [
-                (cljInject deps)
+                (cljInject {})
                 (cljBuildInject "build" {
                   "io.github.clojure/tools.build" = cljBuildToolsVersion;
                 })
