@@ -1,5 +1,4 @@
-{ lib, mkCljBin, jdkRunner, cljInject, cljBuildInject, cljBuildToolsVersion
-, stdenv }:
+{ lib, mkCljBin, jdkRunner, clojureHelpers }:
 
 with lib;
 
@@ -7,34 +6,8 @@ with lib;
 , buildCommand ? null, cljLibs ? { }, ... }:
 
 let
-  cljLibsStringified = mapAttrs (_: path: "${path}") cljLibs;
-  depsFile = stdenv.mkDerivation {
-    name = "${name}-deps.edn";
-    buildInputs = [
-      (cljInject cljLibsStringified)
-      (cljBuildInject "build" {
-        "io.github.clojure/tools.build" = cljBuildToolsVersion;
-      })
-    ];
-    phases = [ "installPhase" ];
-    installPhase = ''
-      mkdir -p $out
-      clj-inject ${src}/deps.edn > pre-deps.edn
-      clj-build-inject pre-deps.edn > $out/deps.edn
-      cat $out/deps.edn
-    '';
-  };
-  preppedSrc = let buildClj = ./lib/build.clj;
-  in stdenv.mkDerivation {
-    name = "${name}-prepped";
-    phases = [ "installPhase" ];
-    installPhase = ''
-      mkdir $out
-      cp -r ${src}/. $out
-      rm $out/deps.edn
-      cp ${depsFile}/deps.edn $out
-      cp ${buildClj} $out/build.clj
-    '';
+  preppedSrc = clojureHelpers.mkPreparedClojureSrc {
+    inherit name src cljLibs;
   };
 
 in mkCljBin ({
@@ -42,5 +15,5 @@ in mkCljBin ({
   projectSrc = preppedSrc;
   main-ns = primaryNamespace;
   checkPhase = optionalString (checkPhase != null) checkPhase;
-  lockfile = "${src}/deps-lock.json";
+  lockfile = "deps-lock.json";
 } // (optionalAttrs (buildCommand != null) { inherit buildCommand; }))

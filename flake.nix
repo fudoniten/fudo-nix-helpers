@@ -22,14 +22,17 @@
         cljBuildToolsVersion = "0.10.6";
       in {
         packages = with pkgs.lib; rec {
+          clojureHelpers = pkgs.callPackage ./clojure-helpers.nix {
+            inherit cljInject cljBuildInject cljBuildToolsVersion;
+          };
           mkClojureLib = pkgs.callPackage ./clojure-lib.nix {
             inherit (clj-pkgs) mkCljLib;
-            inherit cljInject cljBuildInject cljBuildToolsVersion;
+            inherit clojureHelpers;
             jdkRunner = default-jdk;
           };
           mkClojureBin = pkgs.callPackage ./clojure-bin.nix {
             inherit (clj-pkgs) mkCljBin;
-            inherit cljInject cljBuildInject cljBuildToolsVersion;
+            inherit clojureHelpers;
             jdkRunner = default-jdk;
           };
           updateClojureDeps = deps:
@@ -72,7 +75,7 @@
               runtimeInputs = [ cljInjectBin ];
               text = let
                 injectionString = concatStringsSep " "
-                  (mapAttrsToList (lib: jar: "${lib} ${jar}") deps);
+                  (mapAttrsToList (lib: jar: "'${lib}' '${jar}'") deps);
               in ''injector --deps-file="$1" ${injectionString}'';
             };
           cljBuildInjectBin =
@@ -86,9 +89,9 @@
               runtimeInputs = [ cljBuildInjectBin ];
               text = let
                 injectionString = concatStringsSep " "
-                  (mapAttrsToList (lib: ver: "${lib} ${ver}") deps);
+                  (mapAttrsToList (lib: ver: "'${lib}' '${ver}'") deps);
               in ''
-                build-injector --deps-file="$1" --build-namespace=${ns} ${injectionString}'';
+                build-injector --deps-file="$1" --build-namespace='${ns}' ${injectionString}'';
             };
 
           makeContainer = { name, entrypoint, repo, env ? { }
@@ -148,7 +151,7 @@
                       nameValuePair "${toString port}/tcp" { }
                     else
                       nameValuePair
-                      "${toString port.port}/${port.type or "tcp"}")
+                      "${toString port.port}/${port.type or "tcp"}" { })
                     exposedPorts)
                 else
                   mapAttrs' (_:
