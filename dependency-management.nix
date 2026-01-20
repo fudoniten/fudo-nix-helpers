@@ -10,13 +10,19 @@
   # Dependency Management
   # --------------------------------------------------------------------
 
-  # Helper script to regenerate deps-lock.json with all injections applied.
-  # Usage: nix run .#updateClojureDeps
-  #        nix run .#updateClojureDeps -- path/to/deps.edn
-  updateClojureDeps = pkgs.writeShellApplication {
+  # Helper function to create a script that regenerates deps-lock.json with
+  # all injections applied.
+  # Parameters:
+  #   deps: Attribute set of local Clojure dependencies to inject
+  # Returns: A derivation that can be used in buildInputs or run directly
+  # Usage in consumer flake: (updateClojureDeps {})
+  # Usage via nix run: nix run .#updateClojureDeps
+  #                    nix run .#updateClojureDeps -- path/to/deps.edn
+  updateClojureDeps = deps:
+    pkgs.writeShellApplication {
       name = "update-deps.sh";
       runtimeInputs = [
-        (cljInject {})
+        (cljInject deps)
         (cljBuildInject "build" {
           "io.github.clojure/tools.build" = cljBuildToolsVersion;
         })

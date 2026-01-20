@@ -95,8 +95,15 @@
           # Dependency Management
           # --------------------------------------------------------------------
 
-          # Expose updateClojureDeps from dependency-management module
+          # Function to create a script for updating deps-lock.json
+          # Consumers should call this with their deps: (updateClojureDeps {})
+          # For nix run, use: nix run .#update-clojure-deps
           inherit (dependencyManagement) updateClojureDeps;
+
+          # Pre-instantiated version of updateClojureDeps for direct usage
+          # Usage: nix run .#update-clojure-deps
+          #        nix run .#update-clojure-deps -- path/to/deps.edn
+          update-clojure-deps = dependencyManagement.updateClojureDeps {};
 
           # --------------------------------------------------------------------
           # Dependency Injection Tools
