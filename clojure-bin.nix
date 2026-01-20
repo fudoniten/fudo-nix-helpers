@@ -1,46 +1,53 @@
-{ lib, mkCljBin, jdkRunner, cljInject, cljBuildInject, cljBuildToolsVersion
-, stdenv }:
+# Build a runnable Clojure CLI application
+#
+# This module wraps clj-nix's mkCljBin with automatic dependency injection,
+# allowing you to use local Clojure libraries as dependencies without
+# uploading them to Maven.
+#
+# The result is an executable that runs the specified namespace's -main function.
+#
+# Example usage:
+#   mkClojureBin {
+#     name = "my-cli";
+#     src = ./.;
+#     primaryNamespace = "my.cli.main";
+#     version = "1.0.0";
+#     cljLibs = {
+#       "org.myorg/my-lib" = myLibDerivation;
+#     };
+#   }
+
+{ lib, mkCljBin, jdkRunner, clojureHelpers }:
 
 with lib;
 
+# Parameters:
+#   name: Application name (used for the executable)
+#   src: Path to source directory containing deps.edn and deps-lock.json
+#   primaryNamespace: Namespace containing the -main function to run
+#   version: Version string (default: "0.1")
+#   cljLibs: Map of Maven coordinates to local JAR derivations (default: {})
+#   buildCommand: Custom build command override (default: null, uses clj-nix default)
+#   checkPhase: Custom test/check phase (default: null)
 { name, primaryNamespace, src, version ? "0.1", checkPhase ? null
 , buildCommand ? null, cljLibs ? { }, ... }:
 
 let
-  cljLibsStringified = mapAttrs (_: path: "${path}") cljLibs;
-  depsFile = stdenv.mkDerivation {
-    name = "${name}-deps.edn";
-    buildInputs = [
-      (cljInject cljLibsStringified)
-      (cljBuildInject "build" {
-        "io.github.clojure/tools.build" = cljBuildToolsVersion;
-      })
-    ];
-    phases = [ "installPhase" ];
-    installPhase = ''
-      mkdir -p $out
-      clj-inject ${src}/deps.edn > pre-deps.edn
-      clj-build-inject pre-deps.edn > $out/deps.edn
-      cat $out/deps.edn
-    '';
-  };
-  preppedSrc = let buildClj = ./lib/build.clj;
-  in stdenv.mkDerivation {
-    name = "${name}-prepped";
-    phases = [ "installPhase" ];
-    installPhase = ''
-      mkdir $out
-      cp -r ${src}/. $out
-      rm $out/deps.edn
-      cp ${depsFile}/deps.edn $out
-      cp ${buildClj} $out/build.clj
-    '';
+  # Prepare the source tree with injected dependencies and build script
+  preppedSrc = clojureHelpers.mkPreparedClojureSrc {
+    inherit name src cljLibs;
   };
 
+# Build the application using clj-nix
+# This produces an uberjar with a launcher script
 in mkCljBin ({
   inherit name jdkRunner version;
   projectSrc = preppedSrc;
+  # The namespace with -main function to execute
   main-ns = primaryNamespace;
   checkPhase = optionalString (checkPhase != null) checkPhase;
-  lockfile = "${src}/deps-lock.json";
-} // (optionalAttrs (buildCommand != null) { inherit buildCommand; }))
+  # Use the lockfile from the prepared source (which came from original src)
+  lockfile = "deps-lock.json";
+}
+# Use custom build command if provided
+// (optionalAttrs (buildCommand != null) { inherit buildCommand; }))

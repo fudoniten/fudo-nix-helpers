@@ -1,10 +1,35 @@
+# Package a Ruby script as a standalone application
+#
+# This helper creates a Ruby script with proper shebang and runtime environment,
+# wrapped in a shell script that sets up PATH and RUBYLIB.
+#
+# Example usage:
+#   writeRubyApplication {
+#     name = "my-script";
+#     pkgs = pkgs;
+#     text = ''
+#       puts "Hello, world!"
+#     '';
+#     runtimeInputs = [ pkgs.curl ];  # Added to PATH
+#     libInputs = [ ./lib ];          # Added to RUBYLIB
+#   }
+#
+# Parameters:
+#   name: Name of the resulting executable
+#   text: Ruby script content (without shebang)
+#   pkgs: Nixpkgs package set
+#   runtimeInputs: Packages to add to PATH (default: [])
+#   ruby: Ruby interpreter to use (default: pkgs.ruby_3_3)
+#   libInputs: Paths to add to RUBYLIB (default: [])
+#   checkPhase: Custom check phase for validation (default: null)
+
 { name, text, pkgs, runtimeInputs ? [ ], ruby ? pkgs.ruby_3_3, libInputs ? [ ]
-, rubocop ? pkgs.rubyPackages_3_3.rubocop, lib ? pkgs.lib
-, writeTextFile ? pkgs.writeTextFile
+, lib ? pkgs.lib, writeTextFile ? pkgs.writeTextFile
 , writeShellScriptBin ? pkgs.writeShellScriptBin, checkPhase ? null }:
 
 with lib;
 let
+  # The Ruby script itself, with shebang
   ruby-name = "${name}-ruby";
   rubyExec = writeTextFile {
     name = ruby-name;
@@ -17,31 +42,23 @@ let
       ${text}
     '';
     checkPhase = checkPhase;
-    ## Damn: uses obsolete packages
-    # checkPhase = let
-    #   excludedChecks = [
-    #     "Style/ColonMethodCall"
-    #     "Style/BlockDelimiters"
-    #     "Style/StringLiterals"
-    #     "Naming/FileName"
-    #     "Layout/TrailingEmptyLines"
-    #     "Lint/ScriptPermission"
-    #   ];
-    # in if checkPhase == null then ''
-    #   runHook preCheck
-    #   HOME=$(mktemp -d rubocop-XXXXXXXX)
-    #   ${rubocop}/bin/rubocop --except ${
-    #     concatStringsSep "," excludedChecks
-    #   } --cache false "$target"
-    #   runHook postCheck
-    # '' else
-    #   checkPhase;
   };
+
+  # Helper to build RUBYLIB path string
   makeLibPath = libPaths: concatStringsSep ":" (map (path: "${path}") libPaths);
-in writeShellScriptBin name (optionalString (runtimeInputs != [ ]) ''
-  export PATH="${makeBinPath runtimeInputs}:$PATH"
-'' + (optionalString (libInputs != [ ]) ''
-  export RUBYLIB="${makeLibPath libInputs}"
-'') + ''
-  ${rubyExec}/bin/${ruby-name} $@
-'')
+
+# Wrapper script that sets up environment and invokes the Ruby script
+in writeShellScriptBin name (
+  # Add runtime inputs to PATH if specified
+  optionalString (runtimeInputs != [ ]) ''
+    export PATH="${makeBinPath runtimeInputs}:$PATH"
+  ''
+  # Add lib inputs to RUBYLIB if specified
+  + (optionalString (libInputs != [ ]) ''
+    export RUBYLIB="${makeLibPath libInputs}"
+  '')
+  # Invoke the Ruby script, passing through all arguments
+  + ''
+    ${rubyExec}/bin/${ruby-name} "$@"
+  ''
+)
