@@ -91,6 +91,14 @@
             jdkRunner = default-jdk;
           };
 
+          # Build and run Clojure tests
+          # See clojure-tests.nix for parameter documentation
+          mkClojureTests = pkgs.callPackage ./clojure-tests.nix {
+            inherit (clj-pkgs) mkCljLib;
+            inherit clojureHelpers;
+            jdkRunner = default-jdk;
+          };
+
           # --------------------------------------------------------------------
           # Dependency Management
           # --------------------------------------------------------------------
@@ -104,6 +112,12 @@
           # Usage: nix run .#update-clojure-deps
           #        nix run .#update-clojure-deps -- path/to/deps.edn
           update-clojure-deps = dependencyManagement.updateClojureDeps {};
+
+          # Update deps with test alias included (locks test dependencies too)
+          # Usage: nix run .#update-clojure-deps-with-tests
+          update-clojure-deps-with-tests = dependencyManagement.updateClojureDeps {
+            aliases = ["test"];
+          };
 
           # --------------------------------------------------------------------
           # Dependency Injection Tools

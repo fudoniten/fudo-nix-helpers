@@ -14,11 +14,18 @@
   # all injections applied.
   # Parameters:
   #   deps: Attribute set of local Clojure dependencies to inject
+  #   aliases: List of alias names to include when locking (default: [])
   # Returns: A derivation that can be used in buildInputs or run directly
   # Usage in consumer flake: (updateClojureDeps {})
   # Usage via nix run: nix run .#updateClojureDeps
   #                    nix run .#updateClojureDeps -- path/to/deps.edn
-  updateClojureDeps = deps:
+  # For tests: (updateClojureDeps { aliases = ["test"]; })
+  updateClojureDeps = { deps ? {}, aliases ? [] }:
+    let
+      # Build the alias flags for deps-lock
+      aliasFlags = if aliases == [] then ""
+                   else "--alias-include ${pkgs.lib.concatStringsSep "," aliases}";
+    in
     pkgs.writeShellApplication {
       name = "update-deps.sh";
       runtimeInputs = [
@@ -47,7 +54,8 @@
         cat "$TMP/deps.edn"
         cd "$TMP"
         # Generate the lockfile
-        deps-lock
+        # Include specified aliases to lock their dependencies too
+        deps-lock ${aliasFlags}
         mv "$TMP/deps-lock.json" "$SRC/deps-lock.json"
       '';
     };
