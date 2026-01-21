@@ -47,7 +47,7 @@ in mkCljBin ({
   main-ns = primaryNamespace;
   checkPhase = optionalString (checkPhase != null) checkPhase;
   # Use the lockfile from the prepared source (which came from original src)
-  lockfile = "deps-lock.json";
+  lockfile = "${preppedSrc}/deps-lock.json";
 }
 # Use custom build command if provided
 // (optionalAttrs (buildCommand != null) { inherit buildCommand; }))
