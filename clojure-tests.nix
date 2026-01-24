@@ -35,26 +35,26 @@ with lib;
 
 let
   # Prepare the source tree with injected dependencies
-  preppedSrc = clojureHelpers.mkPreparedClojureSrc {
-    inherit name src cljLibs;
-  };
+  preppedSrc =
+    clojureHelpers.mkPreparedClojureSrc { inherit name src cljLibs; };
 
-# Use mkCljLib but override the buildCommand to run tests
-# This leverages all of clj-nix's dependency resolution machinery
+  # Use mkCljLib but override the buildCommand to run tests
+  # This leverages all of clj-nix's dependency resolution machinery
 in mkCljLib {
   inherit jdkRunner;
   name = "${name}-tests";
   projectSrc = preppedSrc;
   lockfile = "${preppedSrc}/deps-lock.json";
   version = "test";
-  
+
   # Override the build command to run tests instead of building a JAR
   buildCommand = ''
     # Run tests with eftest using the test alias
     # clj-nix has already resolved all dependencies from deps-lock.json
     clojure -M:${testAlias}
-    
+
     # Create a marker file to satisfy mkCljLib's expectation of a JAR output
-    touch ${name}-tests.jar
+    mkdir -p target
+    touch target/${name}-tests.jar
   '';
 }
