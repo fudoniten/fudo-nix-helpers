@@ -54,7 +54,10 @@ in mkCljLib {
     clojure -M:${testAlias}
 
     # Create a marker file to satisfy mkCljLib's expectation of a JAR output
-    mkdir -p target
-    touch target/${name}-tests.jar
+    # Extract the Maven group path from the name (e.g., "org.fudo/klaxon" -> "org/fudo")
+    group_path=$(echo "${name}" | sed 's|/.*||' | tr '.' '/')
+    artifact=$(echo "${name}" | sed 's|.*/||')
+    mkdir -p "target/$group_path"
+    touch "target/$group_path/$artifact-tests.jar"
   '';
 }
