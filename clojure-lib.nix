@@ -37,9 +37,8 @@ with lib;
 
 let
   # Prepare the source tree with injected dependencies and build script
-  preppedSrc = clojureHelpers.mkPreparedClojureSrc {
-    inherit name src cljLibs;
-  };
+  preppedSrc =
+    clojureHelpers.mkPreparedClojureSrc { inherit name src cljLibs; };
 
   # Build the library using clj-nix
   # This produces a directory containing the JAR and other build artifacts
@@ -52,25 +51,29 @@ let
     lockfile = "${preppedSrc}/deps-lock.json";
   }
   # Use custom build command if provided
-  // (optionalAttrs (buildCommand != null) { inherit buildCommand; })
-  # Otherwise, generate the default build command
-  // (optionalAttrs (buildCommand == null) {
-    buildCommand = concatStringsSep " " ([
-      "clojure -T:build"
-      "uberjar"
-      ":name" name
-      ":target ./target"
-      ":verbose true"
-      ":version" version
-      ":clj-src" (concatStringsSep "," clojure-src-dirs)
-    ]
-    # Add Java source dirs if specified
-    ++ (optionals (java-src-dirs != [ ]) [
-      ":java-src" (concatStringsSep "," java-src-dirs)
-    ]));
-  }));
+    // (optionalAttrs (buildCommand != null) { inherit buildCommand; })
+    # Otherwise, generate the default build command
+    // (optionalAttrs (buildCommand == null) {
+      buildCommand = concatStringsSep " " ([
+        "clojure -T:build"
+        "uberjar"
+        ":name"
+        name
+        ":target ./target"
+        ":verbose true"
+        ":version"
+        version
+        ":clj-src"
+        (concatStringsSep "," clojure-src-dirs)
+      ]
+      # Add Java source dirs if specified
+        ++ (optionals (java-src-dirs != [ ]) [
+          ":java-src"
+          (concatStringsSep "," java-src-dirs)
+        ]));
+    }));
 
-# Final derivation: extract just the JAR file
+  # Final derivation: extract just the JAR file
 in stdenv.mkDerivation {
   name = "${name}-${version}.jar";
   inherit version;
@@ -78,4 +81,9 @@ in stdenv.mkDerivation {
   src = stageBuild;
   # Copy the JAR to $out (the JAR becomes the derivation output itself)
   installPhase = "cp $src/*.jar $out";
+
+  # Expose the prepped source for use in dependency injection
+  # This allows downstream projects to use this library's deps.edn when
+  # updating their own deps-lock.json files
+  passthru = { preppedSrc = preppedSrc; };
 }
