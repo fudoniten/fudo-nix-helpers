@@ -3,8 +3,11 @@
 # This module provides tools to inject local Clojure dependencies into deps.edn
 # files, replacing Maven coordinates with :local/root paths. This enables using
 # local libraries without publishing them to Maven Central.
+#
+# Both tools are implemented as Babashka scripts, avoiding the need for a
+# full JVM build (and the chicken-and-egg dependency problem that entails).
 
-{ pkgs, clj-pkgs, jdkRunner }:
+{ pkgs }:
 
 with pkgs.lib;
 
@@ -14,9 +17,10 @@ rec {
   # --------------------------------------------------------------------
 
   # The injector binary - replaces Maven deps with :local/root paths
-  cljInjectBin = pkgs.callPackage ./lib/injector/package.nix {
-    inherit (clj-pkgs) mkCljBin;
-    inherit jdkRunner;
+  cljInjectBin = pkgs.writeShellApplication {
+    name = "injector";
+    runtimeInputs = [ pkgs.babashka ];
+    text = ''exec bb ${./lib/injector.bb} "$@"'';
   };
 
   # Wrapper that invokes injector with a map of dependencies to inject.
@@ -34,9 +38,10 @@ rec {
     };
 
   # The build-injector binary - adds :build alias with tools.build
-  cljBuildInjectBin = pkgs.callPackage ./lib/build-injector/package.nix {
-    inherit (clj-pkgs) mkCljBin;
-    inherit jdkRunner;
+  cljBuildInjectBin = pkgs.writeShellApplication {
+    name = "build-injector";
+    runtimeInputs = [ pkgs.babashka ];
+    text = ''exec bb ${./lib/build-injector.bb} "$@"'';
   };
 
   # Wrapper that invokes build-injector with namespace and dependencies.
