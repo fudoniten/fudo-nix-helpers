@@ -55,11 +55,8 @@
         # Version of tools.build injected into all Clojure projects
         cljBuildToolsVersion = "0.10.6";
 
-        # Import dependency injection tools
-        dependencyInjection = pkgs.callPackage ./dependency-injection.nix {
-          inherit clj-pkgs;
-          jdkRunner = default-jdk;
-        };
+        # Import dependency injection tools (Babashka-based, no JVM needed)
+        dependencyInjection = pkgs.callPackage ./dependency-injection.nix { };
 
         # Import container helpers
         containerHelpers = pkgs.callPackage ./container-helpers.nix { };
@@ -175,10 +172,7 @@
               cljBuildToolsVersion = "0.10.6";
 
               dependencyInjection =
-                pkgs.callPackage ./dependency-injection.nix {
-                  inherit clj-pkgs;
-                  jdkRunner = default-jdk;
-                };
+                pkgs.callPackage ./dependency-injection.nix { };
 
               clojureHelpers = pkgs.callPackage ./clojure-helpers.nix {
                 inherit cljBuildToolsVersion;
