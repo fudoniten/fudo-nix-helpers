@@ -5,7 +5,7 @@
 
 { pkgs, system, cljInject, cljBuildInject, cljBuildToolsVersion, deps-lock }:
 
-{
+rec {
   # --------------------------------------------------------------------
   # Dependency Management
   # --------------------------------------------------------------------
@@ -59,4 +59,36 @@
         mv "$TMP/deps-lock.json" "$SRC/deps-lock.json"
       '';
     };
+
+  # --------------------------------------------------------------------
+  # Git Dependency Synchronization
+  # --------------------------------------------------------------------
+
+  # Binary wrapper for the Git dependency updater Babashka script
+  updateGitDepsBin = pkgs.writeShellApplication {
+    name = "update-git-deps";
+    runtimeInputs = [ pkgs.babashka pkgs.git ];
+    text = ''exec bb ${./lib/update-git-deps.bb} "$@"'';
+  };
+
+  # Pre-configured update-git-deps with common defaults
+  # This can be run via: nix run .#update-git-deps
+  # or used as a build input
+  update-git-deps = pkgs.writeShellApplication {
+    name = "update-git-deps";
+    runtimeInputs = [ updateGitDepsBin pkgs.nix ];
+    text = ''
+      # Run the git deps updater with lock file updates enabled by default
+      exec update-git-deps --update-locks "$@"
+    '';
+  };
+
+  # Variant without automatic lock updates (for manual control)
+  update-git-deps-no-locks = pkgs.writeShellApplication {
+    name = "update-git-deps-no-locks";
+    runtimeInputs = [ updateGitDepsBin ];
+    text = ''
+      exec update-git-deps "$@"
+    '';
+  };
 }

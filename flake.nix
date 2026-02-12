@@ -127,6 +127,17 @@
             dependencyManagement.updateClojureDeps { aliases = [ "test" ]; };
 
           # --------------------------------------------------------------------
+          # Git Dependency Synchronization
+          # --------------------------------------------------------------------
+
+          # Synchronize Git dependencies between deps.edn, flake.nix, and lock files
+          # Usage: nix run .#update-git-deps
+          #        nix run .#update-git-deps -- --dry-run
+          #        nix run .#update-git-deps -- --override owner/repo=commit-sha
+          inherit (dependencyManagement)
+            update-git-deps update-git-deps-no-locks updateGitDepsBin;
+
+          # --------------------------------------------------------------------
           # Dependency Injection Tools
           # --------------------------------------------------------------------
 
@@ -152,7 +163,8 @@
           # Only include instantiated derivations, not functions
           inherit (allExports)
             update-clojure-deps update-clojure-deps-with-tests cljInjectBin
-            cljBuildInjectBin;
+            cljBuildInjectBin update-git-deps update-git-deps-no-locks
+            updateGitDepsBin;
         };
       }) // {
         # Library functions (not system-specific or per-system helpers)
@@ -208,7 +220,7 @@
               };
 
               # Dependency management
-              inherit (dependencyManagement) updateClojureDeps;
+              inherit (dependencyManagement) updateClojureDeps update-git-deps;
 
               # Dependency injection
               inherit (dependencyInjection) cljInject cljBuildInject;

@@ -14,6 +14,7 @@ A collection of reusable Nix helpers for building Clojure libraries, CLI applica
 - [Dependency Management](#dependency-management)
   - [How It Works](#how-it-works)
   - [Updating Dependencies](#updating-dependencies)
+  - [Synchronizing Git Dependencies](#synchronizing-git-dependencies)
 - [Container Helpers](#container-helpers)
   - [makeContainer](#makecontainer)
   - [deployContainers](#deploycontainers)
@@ -212,6 +213,75 @@ This will:
 3. Write `deps-lock.json` to your project
 
 **Important**: Your project must have a `deps-lock.json` file for builds to work.
+
+### Synchronizing Git Dependencies
+
+If your project uses Git dependencies (`:git/url` and `:git/sha` in `deps.edn`) that are also declared as Flake inputs, you can automatically synchronize them to use the latest commits:
+
+```bash
+# Update all Git dependencies to latest commits and update lock files
+nix run github:fudoniten/fudo-nix-helpers#update-git-deps
+
+# Preview what would be updated without making changes
+nix run github:fudoniten/fudo-nix-helpers#update-git-deps -- --dry-run
+
+# Pin a specific library to a specific commit
+nix run github:fudoniten/fudo-nix-helpers#update-git-deps -- --override owner/repo=abc123...
+
+# Update without automatically regenerating lock files
+nix run github:fudoniten/fudo-nix-helpers#update-git-deps-no-locks
+```
+
+This tool:
+1. Finds all `:git/url` and `:git/sha` entries in your `deps.edn`
+2. Fetches the latest commit SHA for each repository
+3. Updates `deps.edn` with the new SHAs
+4. Matches Git dependencies to Flake inputs and updates `flake.nix` to pin the same commits
+5. Optionally runs `nix flake lock` and `updateClojureDeps` to update lock files
+
+#### Example Workflow
+
+Your `deps.edn` has a Git dependency:
+
+```clojure
+{:deps {com.github.myuser/my-lib {:git/url "https://github.com/myuser/my-lib"
+                                  :git/sha "abc123..."}}}
+```
+
+Your `flake.nix` declares the same repository as an input:
+
+```nix
+{
+  inputs = {
+    my-lib = {
+      url = "github:myuser/my-lib";
+      flake = false;
+    };
+  };
+}
+```
+
+Running `update-git-deps` will:
+- Fetch the latest commit from `github.com/myuser/my-lib`
+- Update the `:git/sha` in `deps.edn`
+- Update the flake input URL to `github:myuser/my-lib/new-commit-sha`
+- Update `flake.lock` and `deps-lock.json` to pin the new version
+
+#### Options
+
+```bash
+update-git-deps [OPTIONS]
+
+Options:
+  --deps-file FILE       Path to deps.edn (default: deps.edn)
+  --flake-file FILE      Path to flake.nix (default: flake.nix)
+  --update-locks         Run nix flake lock and updateClojureDeps after updating
+  --override LIB=SHA     Pin a specific library to a specific commit
+                         Format: github-owner/repo=abc123...
+                         Can be specified multiple times
+  --dry-run              Show what would be updated without making changes
+  --help                 Show help message
+```
 
 ### Running Injectors Directly
 
