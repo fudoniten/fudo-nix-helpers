@@ -24,7 +24,7 @@
 
 {
   inputs = {
-    nixpkgs.url = "nixpkgs/nixos-25.05";
+    nixpkgs.url = "nixpkgs/nixos-25.11";
 
     # clj-nix provides the core Clojure packaging functionality
     clj-nix = {
