@@ -48,6 +48,11 @@
     (let [[_ owner repo] (re-matches #"git@github\.com:([^/]+)/([^/\.]+)" url)]
       {:owner owner :repo repo :github? true})
 
+    ;; GitHub shorthand with ref: github:owner/repo/ref
+    (re-matches #"github:([^/]+)/([^/]+)/.+" url)
+    (let [[_ owner repo] (re-matches #"github:([^/]+)/([^/]+)/.+" url)]
+      {:owner owner :repo repo :github? true})
+
     ;; GitHub shorthand: github:owner/repo
     (re-matches #"github:([^/]+)/([^/]+)" url)
     (let [[_ owner repo] (re-matches #"github:([^/]+)/([^/]+)" url)]
@@ -287,7 +292,7 @@
                                              {:lib-name lib-name :git/url url}
                                              flake-inputs)]
                     (println "  → Matched to flake input:" (:name matching-input))
-                    (let [new-flake-url (github-url-to-flake-url url new-sha)]
+                    (let [new-flake-url (github-url-to-flake-url (:url matching-input) new-sha)]
                       (swap! flake-updates assoc (:name matching-input) {:url new-flake-url})))))
               (println "  ✗ Failed to fetch latest commit")))
 
