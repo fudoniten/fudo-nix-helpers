@@ -10,6 +10,8 @@
 #   - mkClojureTests: Build and run Clojure tests
 #   - makeContainer: Create a Docker-compatible container image
 #   - deployContainers: Push containers to a registry
+#   - makeTerminalContainer: Create an SSH-accessible terminal container
+#   - deployTerminalContainer: Push terminal containers to a registry
 #   - updateClojureDeps: Regenerate deps-lock.json with injected dependencies
 #   - cljInject, cljBuildInject: Dependency injection functions
 #
@@ -60,6 +62,10 @@
 
         # Import container helpers
         containerHelpers = pkgs.callPackage ./container-helpers.nix { };
+
+        # Import terminal container helpers (SSH-accessible terminal hosts)
+        terminalContainerHelpers =
+          pkgs.callPackage ./terminal-container-helpers.nix { };
 
         # Import dependency management tools
         dependencyManagement = pkgs.callPackage ./dependency-management.nix {
@@ -151,6 +157,15 @@
 
           # Expose container helpers
           inherit (containerHelpers) makeContainer deployContainers;
+
+          # --------------------------------------------------------------------
+          # Terminal Container Helpers
+          # --------------------------------------------------------------------
+
+          # Build SSH-accessible terminal containers for agents/remote development
+          # See terminal-container-helpers.nix for parameter documentation
+          inherit (terminalContainerHelpers)
+            makeTerminalContainer deployTerminalContainer;
         };
 
       in {
@@ -193,6 +208,9 @@
 
               containerHelpers = pkgs.callPackage ./container-helpers.nix { };
 
+              terminalContainerHelpers =
+                pkgs.callPackage ./terminal-container-helpers.nix { };
+
               dependencyManagement =
                 pkgs.callPackage ./dependency-management.nix {
                   inherit system cljBuildToolsVersion;
@@ -227,6 +245,10 @@
 
               # Container helpers
               inherit (containerHelpers) makeContainer deployContainers;
+
+              # Terminal container helpers
+              inherit (terminalContainerHelpers)
+                makeTerminalContainer deployTerminalContainer;
             };
         };
       };
