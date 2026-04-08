@@ -143,7 +143,12 @@ rec {
 
         # Ensure user home and .ssh directory exist with correct permissions
         mkdir -p ${homeDir}/.ssh
-        cp ${authorizedKeysFile} ${homeDir}/.ssh/authorized_keys
+
+        # Only copy default authorized_keys if none exists (allows K8s secret injection)
+        if [ ! -f ${homeDir}/.ssh/authorized_keys ]; then
+          cp ${authorizedKeysFile} ${homeDir}/.ssh/authorized_keys
+        fi
+
         chmod 700 ${homeDir}/.ssh
         chmod 600 ${homeDir}/.ssh/authorized_keys
         chown -R ${toString uid}:${toString gid} ${homeDir}
