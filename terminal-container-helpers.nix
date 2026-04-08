@@ -173,6 +173,10 @@ rec {
       fakeRootCommands = ''
         ${pkgs.dockerTools.shadowSetup}
 
+        # Create sshd user for privilege separation
+        groupadd -r sshd
+        useradd -r -g sshd -d /var/empty -s /sbin/nologin -c "SSH privilege separation" sshd
+
         # Create the user and group
         groupadd -g ${toString gid} ${user}
         useradd -u ${
