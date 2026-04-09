@@ -183,6 +183,10 @@ rec {
           toString uid
         } -g ${user} -d ${homeDir} -s ${shell}/bin/bash -M ${user}
 
+        # Unlock the user account to allow SSH key authentication
+        # Set password to * (allows key-based auth, blocks password auth)
+        usermod -p '*' ${user}
+
         # Create home directory
         mkdir -p ${homeDir}
         chown -R ${toString uid}:${toString gid} ${homeDir}
