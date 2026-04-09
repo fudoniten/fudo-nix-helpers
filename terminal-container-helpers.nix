@@ -141,6 +141,8 @@ rec {
           ${pkgs.openssh}/bin/ssh-keygen -t rsa -b 4096 -f /etc/ssh/ssh_host_rsa_key -N ""
         fi
 
+        chmod 700 ${homeDir}
+
         # Ensure user home and .ssh directory exist with correct permissions
         mkdir -p ${homeDir}/.ssh
 
