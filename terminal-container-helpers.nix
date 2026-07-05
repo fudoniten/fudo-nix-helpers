@@ -172,7 +172,7 @@ rec {
         groupadd -g ${toString gid} ${user}
         useradd -u ${
           toString uid
-        } -g ${user} -d ${homeDir} -s ${shell}/bin/bash -M ${user}
+        } -p '*' -g ${user} -d ${homeDir} -s ${shell}/bin/bash -M ${user}
 
         # Create home directory
         mkdir -p ${homeDir}

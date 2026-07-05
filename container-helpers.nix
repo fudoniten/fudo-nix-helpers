@@ -57,7 +57,7 @@ rec {
         ${pkgs.dockerTools.shadowSetup}
         # Create non-root user for security (UID 1000 for compatibility)
         groupadd -g 1000 ${user}
-        useradd -u 1000 -p '*' -g ${user} -d Dirwork{$} -M -r user{$}
+        useradd -u 1000 -p '*' -g ${user} -d ${workDir} -M -r ${user}
         mkdir -p ${workDir}
         chown -R ${user}:${user} ${workDir}
       '';
