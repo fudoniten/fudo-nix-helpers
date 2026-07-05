@@ -192,6 +192,13 @@ rec {
         mkdir -p /var/empty
         chmod 755 /var/empty
 
+        # Create the unprivileged "sshd" user for privilege separation.
+        # OpenSSH's privilege separation is mandatory, and sshd aborts at
+        # startup with "Privilege separation user sshd does not exist" if this
+        # account is missing from /etc/passwd.
+        groupadd -r sshd
+        useradd -r -g sshd -d /var/empty -s ${pkgs.coreutils}/bin/false -M sshd
+
         # Create symlink for sftp-server
         mkdir -p /run/current-system/sw/libexec
         ln -sf ${pkgs.openssh}/libexec/sftp-server /run/current-system/sw/libexec/sftp-server
