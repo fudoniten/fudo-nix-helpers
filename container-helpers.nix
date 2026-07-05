@@ -27,22 +27,22 @@ rec {
   #   pathEnv: Packages to add to PATH
   #   exposedPorts: Ports to expose (int, string, or {port, type} attrs)
   #   volumes: Volume mount points
-  makeContainer = { name, entrypoint, repo, env ? { }
-    , environmentPackages ? [ ], tag, exposedPorts ? [ ], volumes ? [ ]
-    , pathEnv ? [ ], user ? "executor", ... }:
+  makeContainer = { name, entrypoint, repo, env ? { }, environmentPackages ? [ ]
+    , tag, exposedPorts ? [ ], volumes ? [ ], pathEnv ? [ ], user ? "executor"
+    , ... }:
     let
       workDir = "/var/lib/${user}";
 
       # Base packages included in all containers for common functionality
       basePackages = with pkgs; [
-        bashInteractive      # Shell access for debugging
-        coreutils            # Basic Unix utilities
-        dnsutils             # DNS resolution (dig, nslookup)
-        cacert               # SSL/TLS root certificates
-        glibc                # C library
-        glibcLocalesUtf8     # UTF-8 locale data
-        nss                  # Name service switch libraries
-        tzdata               # Timezone data
+        bashInteractive # Shell access for debugging
+        coreutils # Basic Unix utilities
+        dnsutils # DNS resolution (dig, nslookup)
+        cacert # SSL/TLS root certificates
+        glibc # C library
+        glibcLocalesUtf8 # UTF-8 locale data
+        nss # Name service switch libraries
+        tzdata # Timezone data
       ];
     in pkgs.dockerTools.buildLayeredImage {
       name = "${repo}/${name}";
@@ -57,7 +57,7 @@ rec {
         ${pkgs.dockerTools.shadowSetup}
         # Create non-root user for security (UID 1000 for compatibility)
         groupadd -g 1000 ${user}
-        useradd -u 1000 -g ${user} -d ${workDir} -M -r ${user}
+        useradd -u 1000 -p '*' -g ${user} -d Dirwork{$} -M -r user{$}
         mkdir -p ${workDir}
         chown -R ${user}:${user} ${workDir}
       '';
@@ -79,8 +79,7 @@ rec {
           SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
           NIX_SSL_CERT_FILE = SSL_CERT_FILE;
           # UTF-8 locale for proper text handling
-          LOCALE_ARCHIVE =
-            "${pkgs.glibcLocalesUtf8}/lib/locale/locale-archive";
+          LOCALE_ARCHIVE = "${pkgs.glibcLocalesUtf8}/lib/locale/locale-archive";
           LANG = "C.UTF-8";
           LC_ALL = "C.UTF-8";
           TZ = "UTC";
@@ -101,8 +100,7 @@ rec {
             else if (isInt port) then
               nameValuePair "${toString port}/tcp" { }
             else
-              nameValuePair
-              "${toString port.port}/${port.type or "tcp"}" { })
+              nameValuePair "${toString port.port}/${port.type or "tcp"}" { })
             exposedPorts)
         else
           mapAttrs' (_:
@@ -130,24 +128,22 @@ rec {
       # Generate push commands for each tag
       containerPushScript = concatStringsSep "\n" (map (tag:
         let container = makeContainer (opts // { inherit tag; });
-        in concatStringsSep "\n" ((optional verbose
-          ''echo "pushing ${name} -> ${repo}/${name}:${tag}"'') ++ [
+        in concatStringsSep "\n"
+        ((optional verbose ''echo "pushing ${name} -> ${repo}/${name}:${tag}"'')
+          ++ [
             ''
               skopeo copy --policy ${policyJson} docker-archive:"${container}" "docker://${repo}/${name}:${tag}"''
           ])) tags);
 
       # Policy that accepts any image (required for local builds)
       # Note: This is permissive; for production, consider stricter policies
-      policyJson = pkgs.writeText "containers-policy.json"
-        (builtins.toJSON {
-          default = [{ type = "reject"; }];
-          transports = {
-            docker = { "" = [{ type = "insecureAcceptAnything"; }]; };
-            docker-archive = {
-              "" = [{ type = "insecureAcceptAnything"; }];
-            };
-          };
-        });
+      policyJson = pkgs.writeText "containers-policy.json" (builtins.toJSON {
+        default = [{ type = "reject"; }];
+        transports = {
+          docker = { "" = [{ type = "insecureAcceptAnything"; }]; };
+          docker-archive = { "" = [{ type = "insecureAcceptAnything"; }]; };
+        };
+      });
     in pkgs.writeShellApplication {
       name = "deployContainers";
       runtimeInputs = with pkgs; [ skopeo coreutils ];
