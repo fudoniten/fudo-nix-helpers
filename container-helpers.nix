@@ -120,7 +120,7 @@ rec {
   # Takes all makeContainer parameters plus:
   #   tags:        List of tags to push (default: ["latest"])
   #   verbose:     Print progress messages (default: false)
-  #   authfile:    Where the registry credential lives — a containers-auth.json
+  #   authfile:    Where the registry credential lives: a containers-auth.json
   #                as written by `skopeo login` or `podman login`. Default is
   #                null, meaning skopeo's own search order (see below).
   #   requireAuth: Fail before building anything when no credential is found
@@ -139,7 +139,7 @@ rec {
   #
   # If none of those holds an entry for the registry, skopeo pushes
   # ANONYMOUSLY, and a registry that rejects that answers 403 at the token
-  # exchange — which reads like a permissions bug rather than a missing
+  # exchange, which reads like a permissions bug rather than a missing
   # login. Setting `authfile` makes the source explicit, and `requireAuth`
   # turns the silent anonymous push into an error that says what to do.
   #
@@ -208,6 +208,21 @@ rec {
       ] else
         [ ];
 
+      # Keep every string below plain ASCII, and free of backticks and '$'.
+      # These end up inside single-quoted printf arguments in a script that
+      # writeShellApplication runs shellcheck over at build time, where two
+      # things bite:
+      #
+      #   - shellcheck runs under a C locale in the build sandbox, so when it
+      #     reports a finding on a line holding a non-ASCII character it dies
+      #     encoding its own output ("commitBuffer: invalid argument") rather
+      #     than printing the finding.
+      #   - a backtick or a '$' inside single quotes is SC2016, which is what
+      #     produces a finding for it to choke on in the first place.
+      #
+      # The two compound: the encoding crash only surfaces once something
+      # else has already warned, so non-ASCII text can sit here harmlessly
+      # until an unrelated edit trips a warning.
       printfLines = lines:
         "printf '%s\\n' "
         + (concatStringsSep " " (map escapeShellArg lines)) + " >&2";
@@ -240,8 +255,8 @@ rec {
 
         ${optionalString (checkedAuthfile != null) ''
           # Set here so a push does not depend on whatever ambient credential
-          # state this particular machine happens to have. Both `skopeo login`
-          # and `skopeo copy` honour this variable.
+          # state this particular machine happens to have. Both skopeo login
+          # and skopeo copy honour this variable.
           export REGISTRY_AUTH_FILE=${escapeShellArg checkedAuthfile}
         ''}
 
@@ -291,9 +306,9 @@ rec {
               "If that was a 403 while requesting a bearer token, the credential"
               "was found but may not write there. The usual causes:"
               ""
-              "  - the namespace in `repo` is not one this account can push to."
-              "    On ghcr.io it must be a GitHub user or org login — a domain"
-              "    name that merely looks right will 403."
+              "  - the namespace in 'repo' is not one this account can push to."
+              "    On ghcr.io it must be a GitHub user or org login, not a"
+              "    domain name that merely looks right."
               "  - the token lacks a write scope, or is a fine-grained token."
               "  - the org has SAML SSO and the token is not authorised for it."
               ""
