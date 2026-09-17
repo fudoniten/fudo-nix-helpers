@@ -118,21 +118,109 @@ rec {
   # Create a script to push container images to a registry.
   #
   # Takes all makeContainer parameters plus:
-  #   tags: List of tags to push (default: ["latest"])
-  #   verbose: Print progress messages (default: false)
+  #   tags:        List of tags to push (default: ["latest"])
+  #   verbose:     Print progress messages (default: false)
+  #   authfile:    Where the registry credential lives — a containers-auth.json
+  #                as written by `skopeo login` or `podman login`. Default is
+  #                null, meaning skopeo's own search order (see below).
+  #   requireAuth: Fail before building anything when no credential is found
+  #                for the registry. Default: true for remote registries,
+  #                false for localhost (a port-forwarded registry needs none).
   #
-  # Usage: nix build .#deployContainers && ./result/bin/deployContainers
-  deployContainers =
-    { name, verbose ? false, repo, tags ? [ "latest" ], ... }@opts:
+  # Usage: nix run .#deployContainer
+  #
+  # ## Where the credential comes from
+  #
+  # skopeo is not given credentials on the command line; it searches, in order:
+  #
+  #   1. $REGISTRY_AUTH_FILE            <- what `authfile` below sets
+  #   2. $XDG_RUNTIME_DIR/containers/auth.json   (`skopeo login` default)
+  #   3. ~/.docker/config.json
+  #
+  # If none of those holds an entry for the registry, skopeo pushes
+  # ANONYMOUSLY, and a registry that rejects that answers 403 at the token
+  # exchange — which reads like a permissions bug rather than a missing
+  # login. Setting `authfile` makes the source explicit, and `requireAuth`
+  # turns the silent anonymous push into an error that says what to do.
+  #
+  # Note (2) is a tmpfs: a plain `skopeo login` does not survive a reboot.
+  # Point `authfile` somewhere under $HOME to keep it.
+  #
+  # ## authfile must be a STRING, not a Nix path
+  #
+  # `authfile = ./auth.json;` copies the credential into the world-readable
+  # Nix store. Write it as a string instead:
+  #
+  #     authfile = "/home/you/.config/containers/auth.json";
+  #
+  # Only the path is baked into the script; the file itself is read at run
+  # time by the machine doing the push. This is enforced below, not merely
+  # documented.
+  deployContainers = { name, verbose ? false, repo, tags ? [ "latest" ]
+    , authfile ? null, requireAuth ? null, ... }@opts:
     let
+      # Docker's rule for splitting a repo into host + namespace: the first
+      # component is a registry host only if it contains a '.' or a ':', or
+      # is exactly "localhost". Anything else is a Docker Hub namespace.
+      #
+      #   "ghcr.io/fudoniten"        -> ghcr.io
+      #   "registry.example/team"    -> registry.example
+      #   "localhost:5000"           -> localhost:5000
+      #   "someuser"                 -> docker.io
+      firstPart = head (splitString "/" repo);
+
+      registryHost =
+        if (hasInfix "." firstPart) || (hasInfix ":" firstPart) || (firstPart
+        == "localhost") then
+          firstPart
+        else
+          "docker.io";
+
+      isLocal = (firstPart == "localhost") || (hasPrefix "localhost:" firstPart)
+        || (hasPrefix "127.0.0.1" firstPart);
+
+      needAuth = if requireAuth != null then requireAuth else !isLocal;
+
+      # Reject a Nix path before it becomes a store path holding a secret.
+      checkedAuthfile = if authfile == null then
+        null
+      else if !(isString authfile) then
+        throw ("deployContainers: `authfile` must be a string, not a Nix path."
+          + " A path literal copies the credential into the world-readable Nix"
+          + " store. Write it as a string:"
+          + " authfile = \"/home/you/.config/containers/auth.json\";")
+      else if hasPrefix builtins.storeDir authfile then
+        throw ("deployContainers: `authfile` (${authfile}) points into the Nix"
+          + " store. Credentials must not live there.")
+      else
+        authfile;
+
+      # Registry-specific guidance for the "no credential" message. Both of
+      # these get the token type wrong often enough to be worth naming.
+      loginHintLines = if registryHost == "ghcr.io" then [
+        "  The username is your GitHub login. The password is a CLASSIC"
+        "  personal access token carrying 'write:packages' and 'read:packages'."
+        "  Fine-grained tokens do not work with ghcr.io and fail as a 403."
+        "  Create one at https://github.com/settings/tokens"
+      ] else if registryHost == "docker.io" then [
+        "  The password is an access token, not your account password:"
+        "  https://app.docker.com/settings/personal-access-tokens"
+      ] else
+        [ ];
+
+      printfLines = lines:
+        "printf '%s\\n' "
+        + (concatStringsSep " " (map escapeShellArg lines)) + " >&2";
+
       # Generate push commands for each tag
       containerPushScript = concatStringsSep "\n" (map (tag:
         let container = makeContainer (opts // { inherit tag; });
         in concatStringsSep "\n"
         ((optional verbose ''echo "pushing ${name} -> ${repo}/${name}:${tag}"'')
           ++ [
-            ''
-              skopeo copy --policy ${policyJson} docker-archive:"${container}" "docker://${repo}/${name}:${tag}"''
+            ''push ${escapeShellArg container} ${
+              escapeShellArg "${repo}/${name}:${tag}"
+            }''
           ])) tags);
 
       # Policy that accepts any image (required for local builds)
@@ -149,6 +237,71 @@ rec {
       runtimeInputs = with pkgs; [ skopeo coreutils ];
       text = ''
         set -euo pipefail
+
+        ${optionalString (checkedAuthfile != null) ''
+          # Set here so a push does not depend on whatever ambient credential
+          # state this particular machine happens to have. Both `skopeo login`
+          # and `skopeo copy` honour this variable.
+          export REGISTRY_AUTH_FILE=${escapeShellArg checkedAuthfile}
+        ''}
+
+        ${optionalString needAuth ''
+          if ! skopeo login --get-login ${
+            escapeShellArg registryHost
+          } >/dev/null 2>&1; then
+            # Resolve which file skopeo actually consulted, so the message
+            # below names a real path rather than a list of candidates.
+            if [ -n "''${REGISTRY_AUTH_FILE:-}" ]; then
+              authfile_path="$REGISTRY_AUTH_FILE"
+            elif [ -n "''${XDG_RUNTIME_DIR:-}" ]; then
+              authfile_path="$XDG_RUNTIME_DIR/containers/auth.json"
+            else
+              authfile_path="''${HOME:-}/.docker/config.json"
+            fi
+            ${
+              printfLines [
+                ""
+                "deployContainers: no credential found for ${registryHost}."
+                ""
+              ]
+            }
+            printf '  Looked in: %s\n\n' "$authfile_path" >&2
+            ${
+              printfLines ([
+                "  Log in once, then re-run this command:"
+                ""
+                "      skopeo login ${registryHost} -u USERNAME --password-stdin"
+                ""
+              ] ++ loginHintLines ++ [ "" ])
+            }
+            exit 1
+          fi
+        ''}
+
+        # Wrapped so a 403 explains itself rather than just ending the run.
+        push() {
+          if skopeo copy --policy ${policyJson} "docker-archive:$1" "docker://$2"; then
+            return 0
+          fi
+          ${
+            printfLines [
+              ""
+              "deployContainers: push failed."
+              ""
+              "If that was a 403 while requesting a bearer token, the credential"
+              "was found but may not write there. The usual causes:"
+              ""
+              "  - the namespace in `repo` is not one this account can push to."
+              "    On ghcr.io it must be a GitHub user or org login — a domain"
+              "    name that merely looks right will 403."
+              "  - the token lacks a write scope, or is a fine-grained token."
+              "  - the org has SAML SSO and the token is not authorised for it."
+              ""
+            ]
+          }
+          exit 1
+        }
+
         ${containerPushScript}
       '';
     };
