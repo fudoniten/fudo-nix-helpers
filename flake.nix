@@ -4,7 +4,7 @@
 # with Nix. The key feature is dependency injection that allows using local
 # Clojure libraries without uploading them to Maven.
 #
-# Main exports (accessible via legacyPackages):
+# Main exports (accessible via legacyPackages, or lib.forSystem):
 #   - mkClojureLib: Build a Clojure library JAR
 #   - mkClojureBin: Build a runnable Clojure CLI application
 #   - mkClojureTests: Build and run Clojure tests
@@ -34,57 +34,51 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Alternative Clojure-to-Nix converter (kept for compatibility)
-    clj2nix.url = "github:hlolli/clj2nix";
-
     # Utility for generating outputs for multiple systems
     utils.url = "github:numtide/flake-utils";
-
-    # Container image building (alternative to dockerTools)
-    nix2container.url = "github:nlewo/nix2container";
   };
 
-  outputs = { self, nixpkgs, clj-nix, utils, nix2container, ... }:
-    utils.lib.eachDefaultSystem (system:
-      let
-        pkgs = import nixpkgs { inherit system; };
+  outputs = { self, nixpkgs, clj-nix, utils, ... }:
+    let
+      # Build the full set of helpers for one system. Both legacyPackages and
+      # lib.forSystem are views onto this, so there is one place to change.
+      mkHelpers = system:
+        let
+          pkgs = import nixpkgs { inherit system; };
 
-        clj-pkgs = clj-nix.packages."${system}";
+          clj-pkgs = clj-nix.packages."${system}";
 
-        # JDK used for running Clojure builds (headless for smaller closure)
-        default-jdk = pkgs.jdk17_headless;
+          # Default JDK for building and running Clojure projects (headless for
+          # a smaller closure). Builders accept `jdk` to override per project.
+          defaultJdk = pkgs.jdk25_headless;
 
-        # Version of tools.build injected into all Clojure projects
-        cljBuildToolsVersion = "0.10.6";
+          # Version of tools.build injected into all Clojure projects. This is
+          # baked into every consumer's deps-lock.json via updateClojureDeps,
+          # so bumping it means every consumer must regenerate its lockfile.
+          cljBuildToolsVersion = "0.10.6";
 
-        # Import dependency injection tools (Babashka-based, no JVM needed)
-        dependencyInjection = pkgs.callPackage ./dependency-injection.nix { };
+          # Dependency injection tools (Babashka-based, no JVM needed)
+          dependencyInjection = pkgs.callPackage ./dependency-injection.nix { };
 
-        # Import container helpers
-        containerHelpers = pkgs.callPackage ./container-helpers.nix { };
+          containerHelpers = pkgs.callPackage ./container-helpers.nix { };
 
-        # Import terminal container helpers (SSH-accessible terminal hosts)
-        terminalContainerHelpers =
-          pkgs.callPackage ./terminal-container-helpers.nix { };
+          # SSH-accessible terminal hosts
+          terminalContainerHelpers =
+            pkgs.callPackage ./terminal-container-helpers.nix { };
 
-        # Import dependency management tools
-        dependencyManagement = pkgs.callPackage ./dependency-management.nix {
-          inherit system cljBuildToolsVersion;
-          inherit (dependencyInjection) cljInject cljBuildInject;
-          deps-lock = clj-nix.packages."${system}".deps-lock;
-        };
+          dependencyManagement = pkgs.callPackage ./dependency-management.nix {
+            inherit system cljBuildToolsVersion;
+            inherit (dependencyInjection) cljInject cljBuildInject;
+            deps-lock = clj-pkgs.deps-lock;
+          };
 
-        # Shared utilities for preparing Clojure sources with injected deps
-        # (Internal helper, not exposed in packages)
-        clojureHelpers = pkgs.callPackage ./clojure-helpers.nix {
-          inherit cljBuildToolsVersion;
-          inherit (dependencyInjection) cljInject cljBuildInject;
-        };
+          # Shared utilities for preparing Clojure sources with injected deps
+          clojureHelpers = pkgs.callPackage ./clojure-helpers.nix {
+            inherit cljBuildToolsVersion;
+            inherit (dependencyInjection) cljInject cljBuildInject;
+          };
 
-        # All exports (including functions) - used by consumers
-        # Using legacyPackages allows functions without flake check validation
-        allExports = with pkgs.lib; rec {
-
+        in {
           # --------------------------------------------------------------------
           # Clojure Build Helpers
           # --------------------------------------------------------------------
@@ -93,24 +87,21 @@
           # See clojure-lib.nix for parameter documentation
           mkClojureLib = pkgs.callPackage ./clojure-lib.nix {
             inherit (clj-pkgs) mkCljLib;
-            inherit clojureHelpers;
-            jdkRunner = default-jdk;
+            inherit clojureHelpers defaultJdk;
           };
 
           # Build a runnable Clojure CLI application (uberjar)
           # See clojure-bin.nix for parameter documentation
           mkClojureBin = pkgs.callPackage ./clojure-bin.nix {
             inherit (clj-pkgs) mkCljBin;
-            inherit clojureHelpers;
-            jdkRunner = default-jdk;
+            inherit clojureHelpers defaultJdk;
           };
 
           # Build and run Clojure tests
           # See clojure-tests.nix for parameter documentation
           mkClojureTests = pkgs.callPackage ./clojure-tests.nix {
             inherit (clj-pkgs) mkCljLib;
-            inherit clojureHelpers;
-            jdkRunner = default-jdk;
+            inherit clojureHelpers defaultJdk;
           };
 
           # --------------------------------------------------------------------
@@ -119,7 +110,6 @@
 
           # Function to create a script for updating deps-lock.json
           # Consumers should call this with their deps: (updateClojureDeps {})
-          # For nix run, use: nix run .#update-clojure-deps
           inherit (dependencyManagement) updateClojureDeps;
 
           # Pre-instantiated version of updateClojureDeps for direct usage
@@ -132,10 +122,6 @@
           update-clojure-deps-with-tests =
             dependencyManagement.updateClojureDeps { aliases = [ "test" ]; };
 
-          # --------------------------------------------------------------------
-          # Git Dependency Synchronization
-          # --------------------------------------------------------------------
-
           # Synchronize Git dependencies between deps.edn, flake.nix, and lock files
           # Usage: nix run .#update-git-deps
           #        nix run .#update-git-deps -- --dry-run
@@ -147,7 +133,6 @@
           # Dependency Injection Tools
           # --------------------------------------------------------------------
 
-          # Expose dependency injection binaries and functions
           inherit (dependencyInjection)
             cljInjectBin cljInject cljBuildInjectBin cljBuildInject;
 
@@ -155,12 +140,7 @@
           # Container Helpers
           # --------------------------------------------------------------------
 
-          # Expose container helpers
           inherit (containerHelpers) makeContainer deployContainers;
-
-          # --------------------------------------------------------------------
-          # Terminal Container Helpers
-          # --------------------------------------------------------------------
 
           # Build SSH-accessible terminal containers for agents/remote development
           # See terminal-container-helpers.nix for parameter documentation
@@ -168,88 +148,30 @@
             makeTerminalContainer deployTerminalContainer;
         };
 
+    in utils.lib.eachDefaultSystem (system:
+      let helpers = mkHelpers system;
       in {
         # legacyPackages is not validated by 'nix flake check', allowing functions
         # This is the standard way to expose both derivations and functions
-        legacyPackages = allExports;
+        legacyPackages = helpers;
 
         # packages contains only actual derivations (for 'nix flake check')
-        packages = with pkgs.lib; {
-          # Only include instantiated derivations, not functions
-          inherit (allExports)
+        packages = {
+          inherit (helpers)
             update-clojure-deps update-clojure-deps-with-tests cljInjectBin
             cljBuildInjectBin update-git-deps update-git-deps-no-locks
             updateGitDepsBin;
         };
       }) // {
         # Library functions (not system-specific or per-system helpers)
-        lib = rec {
+        lib = {
           # Package a Ruby script with proper shebang and runtime environment
           writeRubyApplication = import ./write-ruby-application.nix;
 
           # Helper to get system-specific functions (builders, dependency injection, containers, etc.)
           # Usage: (lib.forSystem "x86_64-linux").mkClojureLib { ... }
-          #        (lib.forSystem "x86_64-linux").cljInject { ... }
           #        (lib.forSystem "x86_64-linux").makeContainer { ... }
-          forSystem = system:
-            let
-              pkgs = import nixpkgs { inherit system; };
-              clj-pkgs = clj-nix.packages."${system}";
-              default-jdk = pkgs.jdk17_headless;
-              cljBuildToolsVersion = "0.10.6";
-
-              dependencyInjection =
-                pkgs.callPackage ./dependency-injection.nix { };
-
-              clojureHelpers = pkgs.callPackage ./clojure-helpers.nix {
-                inherit cljBuildToolsVersion;
-                inherit (dependencyInjection) cljInject cljBuildInject;
-              };
-
-              containerHelpers = pkgs.callPackage ./container-helpers.nix { };
-
-              terminalContainerHelpers =
-                pkgs.callPackage ./terminal-container-helpers.nix { };
-
-              dependencyManagement =
-                pkgs.callPackage ./dependency-management.nix {
-                  inherit system cljBuildToolsVersion;
-                  inherit (dependencyInjection) cljInject cljBuildInject;
-                  deps-lock = clj-nix.packages."${system}".deps-lock;
-                };
-            in {
-              # Clojure builders
-              mkClojureLib = pkgs.callPackage ./clojure-lib.nix {
-                inherit (clj-pkgs) mkCljLib;
-                inherit clojureHelpers;
-                jdkRunner = default-jdk;
-              };
-
-              mkClojureBin = pkgs.callPackage ./clojure-bin.nix {
-                inherit (clj-pkgs) mkCljBin;
-                inherit clojureHelpers;
-                jdkRunner = default-jdk;
-              };
-
-              mkClojureTests = pkgs.callPackage ./clojure-tests.nix {
-                inherit (clj-pkgs) mkCljLib;
-                inherit clojureHelpers;
-                jdkRunner = default-jdk;
-              };
-
-              # Dependency management
-              inherit (dependencyManagement) updateClojureDeps update-git-deps;
-
-              # Dependency injection
-              inherit (dependencyInjection) cljInject cljBuildInject;
-
-              # Container helpers
-              inherit (containerHelpers) makeContainer deployContainers;
-
-              # Terminal container helpers
-              inherit (terminalContainerHelpers)
-                makeTerminalContainer deployTerminalContainer;
-            };
+          forSystem = mkHelpers;
         };
       };
 }

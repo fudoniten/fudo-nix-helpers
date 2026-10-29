@@ -58,12 +58,6 @@
   [{:keys [namespace name] :as params}]
   (assoc params :lib (lib-name namespace name)))
 
-(defn basis
-  "Create a tools.build basis from deps.edn and add it to params."
-  [params]
-  (assoc params :basis
-         (b/create-basis {:project "deps.edn"})))
-
 (defn- add-class-dir
   "Set :class-dir to {target}/classes for compiled output."
   [{:keys [target] :as params}]
@@ -101,7 +95,7 @@
   "Compile Java source files to bytecode.
 
   If :java-src is provided (comma-separated directory list), compiles all
-  .java files to the :class-dir. Uses Java 16 source/target for compatibility.
+  .java files to the :class-dir, targeting Java 21 bytecode (--release 21).
 
   Adds the Java source directories to :src-dirs for inclusion in the JAR."
   [{:keys [verbose java-src class-dir basis] :as params}]
@@ -111,8 +105,9 @@
       (b/javac {:src-dirs   java-src
                 :class-dir  class-dir
                 :basis      basis
-                ;; Target Java 16 for broad compatibility
-                :javac-opts ["-source" "16" "-target" "16"]})
+                ;; Java 21 is the oldest LTS we expect to run on; --release
+                ;; also checks API usage against it, unlike -source/-target
+                :javac-opts ["--release" "21"]})
       (update params :src-dirs concat java-src))
     (do (when verbose (println "skipping java compile, no java-src specified..."))
         params)))
@@ -268,7 +263,6 @@
   [params]
   (-> params
       (process-params)
-      (add-basis)
       (compile-java)
       (compile-clj)
       (write-pom)
@@ -287,7 +281,6 @@
   [params]
   (-> params
       (process-params)
-      (add-basis)
       (compile-java)
       (compile-clj)
       (write-pom)

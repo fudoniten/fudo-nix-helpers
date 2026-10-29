@@ -19,7 +19,7 @@
 #     };
 #   }
 
-{ mkCljLib, jdkRunner, clojureHelpers, stdenv, lib }:
+{ mkCljLib, defaultJdk, clojureHelpers, stdenv, lib }:
 
 with lib;
 
@@ -32,8 +32,10 @@ with lib;
 #   cljLibs: Map of Maven coordinates to local JAR derivations (default: {})
 #   buildCommand: Custom build command override (default: auto-generated)
 #   checkPhase: Custom test/check phase (default: null)
+#   jdk: JDK used to build the library (default: JDK 25 headless)
 { name, src, version ? "0.1", clojure-src-dirs ? [ "src" ], java-src-dirs ? [ ]
-, buildCommand ? null, checkPhase ? null, cljLibs ? { }, ... }:
+, buildCommand ? null, checkPhase ? null, cljLibs ? { }, jdk ? defaultJdk, ...
+}:
 
 let
   # Prepare the source tree with injected dependencies and build script
@@ -43,7 +45,8 @@ let
   # Build the library using clj-nix
   # This produces a directory containing the JAR and other build artifacts
   stageBuild = mkCljLib ({
-    inherit jdkRunner version;
+    inherit version;
+    jdkRunner = jdk;
     name = "${name}-staging";
     projectSrc = preppedSrc;
     checkPhase = optionalString (checkPhase != null) checkPhase;

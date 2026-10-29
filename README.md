@@ -37,14 +37,19 @@ Add this flake to your project's `flake.nix`:
 ```nix
 {
   inputs = {
-    nixpkgs.url = "nixpkgs/nixos-25.05";
-    fudo-nix-helpers.url = "github:fudoniten/fudo-nix-helpers";
+    nixpkgs.url = "nixpkgs/nixos-26.05";
+    fudo-nix-helpers = {
+      url = "github:fudoniten/fudo-nix-helpers";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = { self, nixpkgs, fudo-nix-helpers, ... }:
     let
       system = "x86_64-linux";
-      helpers = fudo-nix-helpers.packages.${system};
+      # Builder functions live in legacyPackages; `packages` only holds
+      # derivations (flake check rejects functions there).
+      helpers = fudo-nix-helpers.legacyPackages.${system};
     in {
       packages.${system}.default = helpers.mkClojureBin {
         name = "my-app";
@@ -91,10 +96,11 @@ Builds a Clojure library JAR file.
 | `src` | Yes | - | Path to source directory containing `deps.edn` |
 | `version` | No | `"0.1"` | Version string |
 | `clojure-src-dirs` | No | `["src"]` | List of Clojure source directories |
-| `java-src-dirs` | No | `[]` | List of Java source directories (compiled to Java 16 bytecode) |
+| `java-src-dirs` | No | `[]` | List of Java source directories (compiled with `--release 21`) |
 | `cljLibs` | No | `{}` | Map of local Clojure library dependencies (see below) |
 | `buildCommand` | No | auto-generated | Custom build command override |
 | `checkPhase` | No | `null` | Custom check/test phase |
+| `jdk` | No | `pkgs.jdk25_headless` | JDK used for the build |
 
 #### Example
 
@@ -123,6 +129,8 @@ Builds a runnable Clojure CLI application (uberjar with launcher script).
 | `cljLibs` | No | `{}` | Map of local Clojure library dependencies |
 | `buildCommand` | No | `null` | Custom build command override |
 | `checkPhase` | No | `null` | Custom check/test phase |
+| `jdk` | No | `pkgs.jdk25_headless` | JDK used for the build and baked into the launcher |
+| (other) | No | - | Passed through to clj-nix's `mkCljBin` (e.g. `java-opts`) |
 
 #### Example
 
@@ -176,7 +184,7 @@ By default, projects use a shared `build.clj` from this repository. If your proj
 
 The default build script supports:
 - Clojure compilation
-- Java compilation (to Java 16 bytecode)
+- Java compilation (`--release 21`)
 - JAR and uberjar creation
 - POM file generation
 
@@ -186,8 +194,8 @@ The default build script supports:
 
 The build process uses two injection tools:
 
-1. **injector** (`lib/injector/`): Replaces Maven dependencies with `:local/root` paths
-2. **build-injector** (`lib/build-injector/`): Adds the `:build` alias with `tools.build` configuration
+1. **injector** (`lib/injector.bb`): Replaces Maven dependencies with `:local/root` paths
+2. **build-injector** (`lib/build-injector.bb`): Adds the `:build` alias with `tools.build` configuration
 
 The workflow is:
 1. Read your `deps.edn`
@@ -418,33 +426,21 @@ fudo-nix-helpers.lib.writeRubyApplication {
 
 ```
 fudo-nix-helpers/
-├── flake.nix                 # Main entry point
-├── flake.lock                # Locked dependencies
-├── README.md                 # This file
-│
-├── clojure-helpers.nix       # Shared Clojure source preparation
-├── clojure-lib.nix           # Library builder
-├── clojure-bin.nix           # Binary/CLI builder
-├── write-ruby-application.nix # Ruby script packager
-│
+├── flake.nix                      # Entry point; mkHelpers builds everything per system
+├── clojure-helpers.nix            # Shared Clojure source preparation (injection)
+├── clojure-lib.nix                # mkClojureLib
+├── clojure-bin.nix                # mkClojureBin
+├── clojure-tests.nix              # mkClojureTests
+├── dependency-injection.nix       # cljInject / cljBuildInject wrappers
+├── dependency-management.nix      # updateClojureDeps, update-git-deps
+├── container-helpers.nix          # makeContainer, deployContainers
+├── terminal-container-helpers.nix # makeTerminalContainer, deployTerminalContainer
+├── write-ruby-application.nix     # Ruby script packager
 └── lib/
-    ├── build.clj             # Default Clojure build script
-    ├── injector/             # Dependency injection tool
-    │   ├── README.md
-    │   ├── package.nix
-    │   ├── deps.edn
-    │   ├── deps-lock.json
-    │   └── src/injector/
-    │       ├── cli.clj
-    │       └── core.clj
-    └── build-injector/       # Build config injection tool
-        ├── README.md
-        ├── package.nix
-        ├── deps.edn
-        ├── deps-lock.json
-        └── src/build_injector/
-            ├── cli.clj
-            └── core.clj
+    ├── build.clj                  # Default tools.build script
+    ├── injector.bb                # Babashka: swap Maven deps for :local/root
+    ├── build-injector.bb          # Babashka: add the :build alias
+    └── update-git-deps.bb         # Babashka: sync git deps with flake inputs
 ```
 
 ## Troubleshooting
@@ -481,4 +477,17 @@ Check that:
 
 ### Java compilation errors
 
-The default build script compiles to Java 16. If you need a different version, provide a custom `build.clj` with modified javac options.
+The default build script compiles Java sources with `--release 21`. If you need a different target, provide a custom `build.clj` with modified javac options.
+
+### Choosing a JDK
+
+Builds default to `jdk25_headless` (the current LTS). For `mkClojureBin` the same JDK is baked into the launcher script, so it is also the runtime. To stay on an older LTS for a particular project, pass `jdk`:
+
+```nix
+helpers.mkClojureBin {
+  name = "my-app";
+  src = ./.;
+  primaryNamespace = "my.app.main";
+  jdk = pkgs.jdk21_headless;
+}
+```
