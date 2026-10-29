@@ -50,7 +50,9 @@
 
           # Default JDK for building and running Clojure projects (headless for
           # a smaller closure). Builders accept `jdk` to override per project.
-          defaultJdk = pkgs.jdk25_headless;
+          # Consumers that make nixpkgs follow a release older than 25.11 have
+          # no JDK 25, so fall back to the previous LTS there.
+          defaultJdk = pkgs.jdk25_headless or pkgs.jdk21_headless;
 
           # Version of tools.build injected into all Clojure projects. This is
           # baked into every consumer's deps-lock.json via updateClojureDeps,

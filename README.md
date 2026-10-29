@@ -481,7 +481,7 @@ The default build script compiles Java sources with `--release 21`. If you need 
 
 ### Choosing a JDK
 
-Builds default to `jdk25_headless` (the current LTS). For `mkClojureBin` the same JDK is baked into the launcher script, so it is also the runtime. To stay on an older LTS for a particular project, pass `jdk`:
+Builds default to `jdk25_headless` (the current LTS), or `jdk21_headless` when your flake makes nixpkgs follow a release older than 25.11, which has no JDK 25. For `mkClojureBin` the same JDK is baked into the launcher script, so it is also the runtime. To stay on an older LTS for a particular project, pass `jdk`:
 
 ```nix
 helpers.mkClojureBin {
