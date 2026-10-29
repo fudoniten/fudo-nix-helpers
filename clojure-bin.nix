@@ -17,7 +17,7 @@
 #     };
 #   }
 
-{ lib, mkCljBin, jdkRunner, clojureHelpers }:
+{ lib, mkCljBin, defaultJdk, clojureHelpers }:
 
 with lib;
 
@@ -29,8 +29,10 @@ with lib;
 #   cljLibs: Map of Maven coordinates to local JAR derivations (default: {})
 #   buildCommand: Custom build command override (default: null, uses clj-nix default)
 #   checkPhase: Custom test/check phase (default: null)
+#   jdk: JDK used to build and run the application (default: JDK 25 headless)
+#   Any other attributes (e.g. java-opts) are passed through to mkCljBin.
 { name, primaryNamespace, src, version ? "0.1", checkPhase ? null
-, buildCommand ? null, cljLibs ? { }, ... }:
+, buildCommand ? null, cljLibs ? { }, jdk ? defaultJdk, ... }@args:
 
 let
   # Prepare the source tree with injected dependencies and build script
@@ -40,8 +42,16 @@ let
 
 # Build the application using clj-nix
 # This produces an uberjar with a launcher script
-in mkCljBin ({
-  inherit name jdkRunner version;
+in mkCljBin ((removeAttrs args [
+  "primaryNamespace"
+  "src"
+  "cljLibs"
+  "jdk"
+  "checkPhase"
+  "buildCommand"
+]) // {
+  inherit name version;
+  jdkRunner = jdk;
   projectSrc = preppedSrc;
   # The namespace with -main function to execute
   main-ns = primaryNamespace;

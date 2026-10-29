@@ -27,7 +27,7 @@ You have a Clojure project with dependencies on your own libraries that aren't p
 ```nix
 {
   inputs = {
-    nixpkgs.url = "nixpkgs/nixos-25.05";
+    nixpkgs.url = "nixpkgs/nixos-26.05";
     fudo-nix-helpers.url = "github:fudoniten/fudo-nix-helpers";
 
     # Your library dependencies
@@ -123,7 +123,7 @@ This will:
 ```nix
 {
   inputs = {
-    nixpkgs.url = "nixpkgs/nixos-25.05";
+    nixpkgs.url = "nixpkgs/nixos-26.05";
     fudo-nix-helpers.url = "github:fudoniten/fudo-nix-helpers";
 
     auth-lib = {

@@ -22,7 +22,7 @@
 #   - deps.edn must have a :test alias with eftest
 #   - deps-lock.json must include test dependencies (use update-clojure-deps-with-tests)
 
-{ stdenv, lib, mkCljLib, jdkRunner, clojureHelpers }:
+{ lib, mkCljLib, defaultJdk, clojureHelpers }:
 
 with lib;
 
@@ -31,7 +31,8 @@ with lib;
 #   src: Path to source directory containing deps.edn and deps-lock.json
 #   testAlias: Alias in deps.edn for test configuration (default: "test")
 #   cljLibs: Map of Maven coordinates to local JAR derivations (default: {})
-{ name, src, testAlias ? "test", cljLibs ? { }, ... }:
+#   jdk: JDK used to run the tests (default: JDK 25 headless)
+{ name, src, testAlias ? "test", cljLibs ? { }, jdk ? defaultJdk, ... }:
 
 let
   # Prepare the source tree with injected dependencies
@@ -41,7 +42,7 @@ let
   # Use mkCljLib but override the buildCommand to run tests
   # This leverages all of clj-nix's dependency resolution machinery
 in mkCljLib {
-  inherit jdkRunner;
+  jdkRunner = jdk;
   name = "${name}-tests";
   projectSrc = preppedSrc;
   lockfile = "${preppedSrc}/deps-lock.json";
