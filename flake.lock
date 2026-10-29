@@ -5,6 +5,7 @@
         "devshell": "devshell",
         "nix-fetcher-data": "nix-fetcher-data",
         "nixpkgs": [
+          "nix-clj-helpers",
           "nixpkgs"
         ]
       },
@@ -26,6 +27,7 @@
     "devshell": {
       "inputs": {
         "nixpkgs": [
+          "nix-clj-helpers",
           "clj-nix",
           "nixpkgs"
         ]
@@ -62,10 +64,35 @@
         "type": "github"
       }
     },
+    "nix-clj-helpers": {
+      "inputs": {
+        "clj-nix": "clj-nix",
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "utils": [
+          "utils"
+        ]
+      },
+      "locked": {
+        "lastModified": 1793316041,
+        "narHash": "sha256-nevQe4SF4siRIrgFJ95tubE5Gob7kcRZK1oSbRzKa54=",
+        "owner": "fudoniten",
+        "repo": "nix-clj-helpers",
+        "rev": "d362ea89fef4360a4d66ebf27692fcb5b5725de8",
+        "type": "github"
+      },
+      "original": {
+        "owner": "fudoniten",
+        "repo": "nix-clj-helpers",
+        "type": "github"
+      }
+    },
     "nix-fetcher-data": {
       "inputs": {
         "flake-parts": "flake-parts",
         "nixpkgs": [
+          "nix-clj-helpers",
           "clj-nix",
           "nixpkgs"
         ]
@@ -112,7 +139,7 @@
     },
     "root": {
       "inputs": {
-        "clj-nix": "clj-nix",
+        "nix-clj-helpers": "nix-clj-helpers",
         "nixpkgs": "nixpkgs",
         "utils": "utils"
       }
