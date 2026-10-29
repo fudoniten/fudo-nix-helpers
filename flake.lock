@@ -75,11 +75,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793316041,
+        "lastModified": 1793316955,
         "narHash": "sha256-nevQe4SF4siRIrgFJ95tubE5Gob7kcRZK1oSbRzKa54=",
         "owner": "fudoniten",
         "repo": "nix-clj-helpers",
-        "rev": "d362ea89fef4360a4d66ebf27692fcb5b5725de8",
+        "rev": "9ff50116baf895b9a80faa39720b40dd997e53c2",
         "type": "github"
       },
       "original": {
